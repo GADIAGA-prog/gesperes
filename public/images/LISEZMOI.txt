@@ -1,0 +1,1 @@
+﻿Place le logo institutionnel ici sous le nom logo.png (format PNG, fond transparent de preference, ~512x512).

@@ -1,0 +1,42 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer components {
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2;
+    }
+    .btn-primary {
+        @apply btn bg-institution-700 text-white hover:bg-institution-800 focus:ring-institution-600;
+    }
+    .btn-secondary {
+        @apply btn bg-white text-gray-700 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:ring-gray-400;
+    }
+    .btn-success {
+        @apply btn bg-administ-600 text-white hover:bg-administ-500 focus:ring-administ-500;
+    }
+    .btn-danger {
+        @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+    }
+    .card {
+        @apply rounded-xl border border-gray-200 bg-white shadow-sm;
+    }
+    .input {
+        @apply block w-full rounded-lg border-gray-300 text-sm shadow-sm focus:border-institution-600 focus:ring-institution-600;
+    }
+    .label {
+        @apply mb-1 block text-sm font-medium text-gray-700;
+    }
+    .badge {
+        @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+    }
+    .table-head {
+        @apply bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500;
+    }
+    .nav-link {
+        @apply flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-institution-100 transition hover:bg-institution-800;
+    }
+    .nav-link-active {
+        @apply bg-institution-800 text-white;
+    }
+}
