@@ -42,10 +42,4 @@ class OutilsGrhController extends Controller
         ]);
     }
 
-    public function planFormation(): View
-    {
-        $this->authorize('gpec.view');
-
-        return view('outils-grh.plan-formation');
-    }
 }

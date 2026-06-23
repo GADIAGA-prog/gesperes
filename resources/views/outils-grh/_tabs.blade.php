@@ -5,7 +5,8 @@
         ['route' => 'outils-grh.fiches-poste', 'label' => 'Fiches de poste', 'active' => ['outils-grh.fiches-poste'], 'perm' => 'gpec.view'],
         ['route' => 'outils-grh.tpee', 'label' => 'TPEE', 'active' => ['outils-grh.tpee'], 'perm' => 'gpec.view'],
         ['route' => 'outils-grh.referentiels-mpp', 'label' => 'Référentiels MPP GRH', 'active' => ['outils-grh.referentiels-mpp'], 'perm' => 'gpec.view'],
-        ['route' => 'outils-grh.plan-formation', 'label' => 'Plan de formation', 'active' => ['outils-grh.plan-formation'], 'perm' => 'gpec.view'],
+        ['route' => 'plan-formation.index', 'label' => 'Plan de formation', 'active' => ['plan-formation.*', 'actions-formation.*'], 'perm' => 'formations.view'],
+        ['route' => 'besoins-formation.index', 'label' => 'Besoins de formation', 'active' => ['besoins-formation.*'], 'perm' => 'formations.view'],
         ['route' => 'alertes.index', 'label' => 'Alertes RH', 'active' => ['alertes.*'], 'perm' => 'alertes.view'],
     ];
 @endphp

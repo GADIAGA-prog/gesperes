@@ -12,6 +12,9 @@ use App\Http\Controllers\CompetenceController;
 use App\Http\Controllers\DisciplineController;
 use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\GpecController;
+use App\Http\Controllers\ActionFormationController;
+use App\Http\Controllers\BesoinFormationController;
+use App\Http\Controllers\PlanFormationController;
 use App\Http\Controllers\OutilsGrhController;
 use App\Http\Controllers\MouvementController;
 use App\Http\Controllers\DashboardController;
@@ -26,6 +29,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ReferentielController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\StructureController;
+use App\Http\Controllers\SuiviDossierController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -190,6 +194,26 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/{conge}/annuler', [CongeController::class, 'annuler'])->name('annuler');
     });
 
+    /* Suivi des dossiers — circuit de traitement, étapes, délais */
+    Route::prefix('suivi-dossiers')->name('suivi-dossiers.')->group(function () {
+        Route::get('/',       [SuiviDossierController::class, 'index'])->name('index');
+        Route::get('/creer',  [SuiviDossierController::class, 'create'])->name('create');
+        Route::post('/',      [SuiviDossierController::class, 'store'])->name('store');
+
+        /* Référentiel des natures — déclaré avant /{suivi_dossier} */
+        Route::get('/natures',                  [SuiviDossierController::class, 'natures'])->name('natures.index');
+        Route::post('/natures',                 [SuiviDossierController::class, 'storeNature'])->name('natures.store');
+        Route::put('/natures/{nature}',         [SuiviDossierController::class, 'updateNature'])->name('natures.update');
+        Route::delete('/natures/{nature}',      [SuiviDossierController::class, 'destroyNature'])->name('natures.destroy');
+
+        Route::get('/{suivi_dossier}',           [SuiviDossierController::class, 'show'])->name('show');
+        Route::get('/{suivi_dossier}/modifier',  [SuiviDossierController::class, 'edit'])->name('edit');
+        Route::put('/{suivi_dossier}',           [SuiviDossierController::class, 'update'])->name('update');
+        Route::delete('/{suivi_dossier}',        [SuiviDossierController::class, 'destroy'])->name('destroy');
+        Route::post('/{suivi_dossier}/transmettre', [SuiviDossierController::class, 'transmettre'])->name('transmettre');
+        Route::post('/{suivi_dossier}/cloturer', [SuiviDossierController::class, 'cloturer'])->name('cloturer');
+    });
+
     /* Référentiels (CRUD générique) */
     Route::prefix('referentiels')->name('referentiels.')->group(function () {
         Route::get('/', [ReferentielController::class, 'index'])->name('index');
@@ -262,7 +286,39 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/fiches-poste',     [OutilsGrhController::class, 'fichesPoste'])->name('fiches-poste');
         Route::get('/tpee',             [OutilsGrhController::class, 'tpee'])->name('tpee');
         Route::get('/referentiels-mpp', [OutilsGrhController::class, 'referentielsMpp'])->name('referentiels-mpp');
-        Route::get('/plan-formation',   [OutilsGrhController::class, 'planFormation'])->name('plan-formation');
+    });
+
+    /* Plan de formation — plan pluriannuel, programmes annuels, actions */
+    Route::prefix('plan-formation')->name('plan-formation.')->group(function () {
+        Route::get('/',       [PlanFormationController::class, 'index'])->name('index');
+        Route::get('/creer',  [PlanFormationController::class, 'create'])->name('create');
+        Route::post('/',      [PlanFormationController::class, 'store'])->name('store');
+        Route::get('/{plan_formation}',          [PlanFormationController::class, 'show'])->name('show');
+        Route::get('/{plan_formation}/modifier', [PlanFormationController::class, 'edit'])->name('edit');
+        Route::get('/{plan_formation}/pdf',      [PlanFormationController::class, 'pdf'])->name('pdf');
+        Route::put('/{plan_formation}',          [PlanFormationController::class, 'update'])->name('update');
+        Route::delete('/{plan_formation}',       [PlanFormationController::class, 'destroy'])->name('destroy');
+
+        /* Programmes annuels */
+        Route::post('/{plan_formation}/programmes',             [PlanFormationController::class, 'storeProgramme'])->name('programmes.store');
+        Route::delete('/{plan_formation}/programmes/{programme}', [PlanFormationController::class, 'destroyProgramme'])->name('programmes.destroy');
+    });
+
+    /* Actions de formation (rattachées à un programme du plan) */
+    Route::prefix('actions-formation')->name('actions-formation.')->group(function () {
+        Route::post('/',           [ActionFormationController::class, 'store'])->name('store');
+        Route::put('/{action}',    [ActionFormationController::class, 'update'])->name('update');
+        Route::delete('/{action}', [ActionFormationController::class, 'destroy'])->name('destroy');
+    });
+
+    /* Recueil des besoins de formation (fiche Annexe 1) */
+    Route::prefix('besoins-formation')->name('besoins-formation.')->group(function () {
+        Route::get('/',       [BesoinFormationController::class, 'index'])->name('index');
+        Route::get('/creer',  [BesoinFormationController::class, 'create'])->name('create');
+        Route::post('/',      [BesoinFormationController::class, 'store'])->name('store');
+        Route::get('/{besoins_formation}/modifier', [BesoinFormationController::class, 'edit'])->name('edit');
+        Route::put('/{besoins_formation}',          [BesoinFormationController::class, 'update'])->name('update');
+        Route::delete('/{besoins_formation}',       [BesoinFormationController::class, 'destroy'])->name('destroy');
     });
 
     /* Indemnités — référentiel paramétrable (décret 2014-427) */

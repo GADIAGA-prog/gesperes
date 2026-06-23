@@ -16,7 +16,8 @@ class DatabaseSeeder extends Seeder
             GeographieSeeder::class,  // 3. Découpage administratif (régions, provinces, chefs-lieux)
             MotifAbsenceSeeder::class,// 4. Motifs d'absence (module présence/congés)
             IndemniteBaremeSeeder::class, // 5. Barèmes d'indemnités (décret 2014-427, données GESPER)
-            UserSeeder::class,        // 6. Compte super-admin (dépend des rôles)
+            NatureDossierSeeder::class,   // 6. Natures de dossier (suivi des dossiers)
+            UserSeeder::class,        // 7. Compte super-admin (dépend des rôles)
         ]);
 
         $this->command->info('✓ Base de données initialisée avec succès.');

@@ -87,6 +87,18 @@ affectations            → historique des mouvements agents
 documents               → pièces jointes par agent (disk privé)
 activity_log            → journal d'audit (spatie)
 
+-- Suivi des dossiers (circuit administratif) --
+natures_dossier         → référentiel des natures (+ délai par défaut), dérivé du MPP GRH (mpp_procedure_id)
+suivi_dossiers          → dossier suivi (réf. bordereau, étape, statut, service/agent courant, délai)
+suivi_dossier_etapes    → historique des transmissions (mouvements du dossier)
+
+-- Plan de formation (planification pluriannuelle, d'après le Plan Triennal MFPTPS) --
+plans_formation         → plan pluriannuel (vision, finalité, objectifs)
+programmes_formation    → déclinaison annuelle (objectif stratégique, budget prévisionnel)
+actions_formation       → actions planifiées (synthèse 1→7 : thème, modalité, public cible…)
+besoins_formation       → recueil des besoins par agent (fiche Annexe 1)
+-- Lien réalisation : formations.action_formation_id → suivi prévu vs réalisé
+
 -- Référentiels rémunération --
 categories, echelles, classes, echelons, indices
 
@@ -134,6 +146,7 @@ competences.view / competences.manage
 performance.view / performance.manage
 discipline.view / discipline.manage
 gpec.view
+suivi.view / suivi.manage
 alertes.view
 documents.view / upload / download / delete
 users.view / create / update / delete
@@ -316,6 +329,8 @@ php artisan tinker
 | Carrière (avancements, promotions, nominations) | ✅ Complet |
 | Mouvements du personnel (sorties temporaires/définitives) | ✅ Complet |
 | Gestion documentaire (dossier, archivage, recherche, ZIP) | ✅ Complet |
+| Suivi des dossiers (circuit, étapes, délais, natures) | ✅ Complet |
+| Plan de formation (plan triennal, programmes annuels, actions, besoins, PDF) | ✅ Complet |
 | Indemnités (référentiel + barèmes GESPER + bulletin PDF) | ✅ Complet |
 | Alertes RH + notifications persistantes (tâche planifiée) | ✅ Complet |
 | Congés & absences (pointage + congés + soldes) | ✅ Complet |

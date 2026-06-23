@@ -57,6 +57,10 @@ final class Permissions
             'discipline.view'   => 'Consulter les dossiers disciplinaires',
             'discipline.manage' => 'Gérer les dossiers disciplinaires',
         ],
+        'Suivi des dossiers' => [
+            'suivi.view'   => 'Consulter le suivi des dossiers',
+            'suivi.manage' => 'Gérer le suivi des dossiers',
+        ],
         'Documents RH' => [
             'documents.view'     => 'Consulter les documents',
             'documents.upload'   => 'Téléverser un document',

@@ -12,7 +12,7 @@ class Formation extends Model
     use Auditable, SoftDeletes;
 
     protected $fillable = [
-        'intitule', 'organisme', 'lieu', 'type', 'date_debut', 'date_fin',
+        'action_formation_id', 'intitule', 'organisme', 'lieu', 'type', 'date_debut', 'date_fin',
         'cout', 'statut', 'description', 'created_by',
     ];
 
@@ -30,4 +30,7 @@ class Formation extends Model
     }
 
     public function createur() { return $this->belongsTo(User::class, 'created_by'); }
+
+    /** Action du plan de formation dont cette session découle (le cas échéant). */
+    public function actionFormation() { return $this->belongsTo(ActionFormation::class, 'action_formation_id'); }
 }
