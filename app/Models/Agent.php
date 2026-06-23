@@ -21,7 +21,7 @@ class Agent extends Model
         'nationalite', 'telephone', 'email', 'adresse',
         'statut', 'emploi_id', 'fonction_id', 'poste_id', 'categorie_id',
         'echelle_id', 'classe_id', 'echelon_id', 'indice_id', 'position_administrative_id',
-        'structure_id', 'region', 'province', 'commune', 'etablissement', 'localite_id', 'date_affectation',
+        'structure_id', 'region_id', 'province_id', 'region', 'province', 'commune', 'etablissement', 'localite_id', 'date_affectation',
         'date_integration', 'date_effet_emploi', 'date_nomination', 'date_retraite',
         'situation_matrimoniale', 'nombre_enfants', 'personnes_a_charge', 'allocation_familiale',
         'type_enseignement_id', 'specialite_id', 'volume_horaire_du', 'volume_horaire_assure', 'lieu_exercice',
@@ -58,6 +58,8 @@ class Agent extends Model
     public function indice() { return $this->belongsTo(Indice::class); }
     public function positionAdministrative() { return $this->belongsTo(PositionAdministrative::class); }
     public function structure() { return $this->belongsTo(Structure::class); }
+    public function region() { return $this->belongsTo(Region::class); }
+    public function province() { return $this->belongsTo(Province::class); }
     public function localite() { return $this->belongsTo(Localite::class); }
     public function typeEnseignement() { return $this->belongsTo(TypeEnseignement::class); }
     public function specialite() { return $this->belongsTo(Specialite::class); }
@@ -65,6 +67,16 @@ class Agent extends Model
     public function createur() { return $this->belongsTo(User::class, 'created_by'); }
     public function documents() { return $this->hasMany(Document::class); }
     public function affectations() { return $this->hasMany(Affectation::class)->latest('date_effet'); }
+    public function evenementsCarriere() { return $this->hasMany(CarriereEvenement::class)->latest('date_effet'); }
+    public function mouvements() { return $this->hasMany(Mouvement::class)->latest('date_effet'); }
+    public function dernierMouvement() { return $this->hasOne(Mouvement::class)->latestOfMany('date_effet'); }
+    public function indemnites() { return $this->hasMany(AgentIndemnite::class); }
+    public function formations() { return $this->belongsToMany(Formation::class, 'formation_agent')->withPivot(['resultat', 'observation'])->withTimestamps(); }
+    public function dossiersDisciplinaires() { return $this->hasMany(DossierDisciplinaire::class)->latest('date_acte'); }
+    public function competences() { return $this->belongsToMany(Competence::class, 'agent_competence')->withPivot(['niveau', 'date_acquisition', 'source'])->withTimestamps(); }
+    public function evaluations() { return $this->hasMany(Evaluation::class)->latest('date_evaluation'); }
+    public function conges() { return $this->hasMany(Conge::class)->latest('date_debut'); }
+    public function pointages() { return $this->hasMany(Pointage::class)->latest('date_pointage'); }
 
     // --- Accessors ---
     public function getNomCompletAttribute(): string

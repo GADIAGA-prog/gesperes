@@ -2,11 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\FicheExcelExport;
+use App\Exports\ReferentielExport;
+use App\Imports\ReferentielImport;
 use App\Support\ReferentielRegistry;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\View\View;
+use Maatwebsite\Excel\Facades\Excel;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -18,7 +23,12 @@ class ReferentielController extends Controller
     public function index(): View
     {
         $this->authorize('settings.view');
-        return view('referentiels.index', ['registre' => ReferentielRegistry::all()]);
+
+        $groupes = ReferentielRegistry::groupes();
+        $actif = request()->query('groupe');
+        $afficher = ($actif && isset($groupes[$actif])) ? [$actif => $groupes[$actif]] : $groupes;
+
+        return view('referentiels.index', ['groupes' => $afficher]);
     }
 
     public function show(string $type, Request $request): View
@@ -72,6 +82,62 @@ class ReferentielController extends Controller
 
         return redirect()->route('referentiels.show', $type)
             ->with('success', "{$config['singulier']} supprimé(e).");
+    }
+
+    public function export(string $type): BinaryFileResponse
+    {
+        $this->authorize('settings.view');
+        $config = $this->config($type);
+
+        $nom = $type . '_' . now()->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new ReferentielExport($type, $config), $nom);
+    }
+
+    public function importForm(string $type): View
+    {
+        $this->authorize('settings.manage');
+        $config = $this->config($type);
+
+        return view('referentiels.import', [
+            'type'    => $type,
+            'config'  => $config,
+            'entetes' => ReferentielExport::entetes($config),
+            'sources' => $this->sources($config),
+        ]);
+    }
+
+    public function import(string $type, Request $request): RedirectResponse
+    {
+        $this->authorize('settings.manage');
+        $config = $this->config($type);
+
+        $request->validate([
+            'fichier' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:5120'],
+        ], [], ['fichier' => 'fichier']);
+
+        $import = new ReferentielImport($type, $config);
+        Excel::import($import, $request->file('fichier'));
+
+        $redirect = redirect()->route('referentiels.show', $type)
+            ->with('success', "{$import->importes} créé(s), {$import->maj} mis à jour.");
+
+        if (! empty($import->erreurs)) {
+            $redirect->with('error', implode(' ', array_slice($import->erreurs, 0, 10)));
+        }
+
+        return $redirect;
+    }
+
+    public function modele(string $type): BinaryFileResponse
+    {
+        $this->authorize('settings.manage');
+        $config = $this->config($type);
+
+        // Modèle vierge : uniquement la ligne d'en-têtes attendue.
+        $export = new FicheExcelExport($config['titre'], ReferentielExport::entetes($config), []);
+
+        return Excel::download($export, "modele_{$type}.xlsx");
     }
 
     private function config(string $type): array

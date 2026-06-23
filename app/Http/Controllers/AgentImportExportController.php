@@ -4,12 +4,15 @@ namespace App\Http\Controllers;
 
 use App\Exports\AgentsExport;
 use App\Imports\AgentsImport;
+use App\Models\Agent;
 use App\Services\AgentService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 class AgentImportExportController extends Controller
 {
@@ -50,5 +53,47 @@ class AgentImportExportController extends Controller
         $nom = 'agents_' . now()->format('Ymd_His') . '.xlsx';
 
         return Excel::download(new AgentsExport($filtres), $nom);
+    }
+
+    /** Fiche individuelle d'un agent au format PDF. */
+    public function exportPdfFiche(Agent $agent): Response
+    {
+        $this->authorize('agents.view');
+
+        $agent->load([
+            'emploi', 'fonction', 'poste', 'categorie', 'echelle', 'classe', 'echelon',
+            'indice', 'positionAdministrative', 'structure', 'localite', 'typeEnseignement',
+            'specialite',
+        ]);
+
+        $nom = 'fiche_' . $agent->matricule . '_' . now()->format('Ymd') . '.pdf';
+
+        return Pdf::loadView('agents.pdf.fiche', ['agent' => $agent])
+            ->setPaper('a4', 'portrait')
+            ->download($nom);
+    }
+
+    /** Liste filtrée des agents au format PDF (mêmes filtres que l'index). */
+    public function exportPdfListe(Request $request): Response
+    {
+        $this->authorize('agents.export');
+
+        $filtres = $request->only(['q', 'region', 'statut_dossier']);
+
+        $agents = Agent::query()
+            ->with(['emploi', 'structure', 'categorie'])
+            ->recherche($filtres['q'] ?? null)
+            ->region($filtres['region'] ?? null)
+            ->when(! empty($filtres['statut_dossier']), fn ($query) =>
+                $query->where('statut_dossier', $filtres['statut_dossier']))
+            ->orderBy('nom')
+            ->get();
+
+        $nom = 'agents_' . now()->format('Ymd_His') . '.pdf';
+
+        return Pdf::loadView('agents.pdf.liste', [
+            'agents'  => $agents,
+            'filtres' => $filtres,
+        ])->setPaper('a4', 'landscape')->download($nom);
     }
 }

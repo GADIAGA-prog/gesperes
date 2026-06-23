@@ -18,6 +18,8 @@ use App\Models\Indice;
 use App\Models\Localite;
 use App\Models\Poste;
 use App\Models\PositionAdministrative;
+use App\Models\Province;
+use App\Models\Region;
 use App\Models\Specialite;
 use App\Models\Structure;
 use App\Models\TypeEnseignement;
@@ -75,7 +77,9 @@ class AgentController extends Controller
         $agent->load([
             'emploi', 'fonction', 'poste', 'categorie', 'echelle', 'classe', 'echelon',
             'indice', 'positionAdministrative', 'structure', 'localite', 'typeEnseignement',
-            'specialite', 'documents', 'affectations.nouvelleStructure',
+            'specialite', 'documents', 'affectations.nouvelleStructure', 'evenementsCarriere',
+            'mouvements.anciennePosition', 'mouvements.nouvellePosition',
+            'dossiersDisciplinaires', 'competences', 'evaluations',
         ]);
 
         return view('agents.show', ['agent' => $agent]);
@@ -108,22 +112,52 @@ class AgentController extends Controller
     /** Données de référence partagées par les formulaires create/edit. */
     private function referentiels(): array
     {
+        $emplois  = Emploi::orderBy('libelle')->get();
+        $echelles = Echelle::orderBy('libelle')->get();
+        $indices  = Indice::orderBy('valeur')->get();
+
+        $provinces       = Province::orderBy('libelle')->get(['id', 'libelle', 'region_id']);
+        $localitesProvin = Localite::whereNotNull('province_id')->orderBy('libelle')->get(['id', 'libelle', 'province_id']);
+
         return [
-            'emplois'     => Emploi::orderBy('libelle')->get(),
+            'emplois'     => $emplois,
             'fonctions'   => Fonction::orderBy('libelle')->pluck('libelle', 'id'),
             'postes'      => Poste::orderBy('libelle')->pluck('libelle', 'id'),
             'categories'  => Categorie::orderBy('code')->pluck('code', 'id'),
-            'echelles'    => Echelle::orderBy('libelle')->pluck('libelle', 'id'),
+            'echelles'    => $echelles->pluck('libelle', 'id'),
             'classes'     => Classe::orderBy('libelle')->pluck('libelle', 'id'),
             'echelons'    => Echelon::orderBy('rang')->pluck('libelle', 'id'),
-            'indices'     => Indice::orderBy('valeur')->pluck('valeur', 'id'),
+            'indices'     => $indices->pluck('valeur', 'id'),
             'positions'   => PositionAdministrative::orderBy('libelle')->pluck('libelle', 'id'),
             'structures'  => Structure::orderBy('libelle')->pluck('libelle', 'id'),
-            'localites'   => Localite::orderBy('libelle')->pluck('libelle', 'id'),
+            'etablissements' => \App\Models\Agent::whereNotNull('etablissement')->where('etablissement', '!=', '')
+                ->distinct()->orderBy('etablissement')->pluck('etablissement'),
+            'regions'     => Region::orderBy('libelle')->pluck('libelle', 'id'),
             'typesEns'    => TypeEnseignement::orderBy('libelle')->pluck('libelle', 'id'),
             'specialites' => Specialite::orderBy('libelle')->pluck('libelle', 'id'),
             'sexes'       => collect(Sexe::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()]),
             'situations'  => collect(SituationMatrimoniale::cases())->mapWithKeys(fn ($s) => [$s->value => $s->label()]),
+
+            // --- Cartes d'auto-remplissage de la grille indiciaire (JS) ---
+            // Emploi → catégorie
+            'emploiCategorie'   => $emplois->whereNotNull('categorie_id')->pluck('categorie_id', 'id'),
+            // Catégorie → échelles disponibles, dérivées de la grille des indices
+            // (les échelles ne portent pas de categorie_id ; la liaison vit dans la table indices).
+            // Auto-sélection de l'échelle uniquement si la catégorie n'en a qu'une.
+            'categorieEchelles' => $indices->whereNotNull('categorie_id')->whereNotNull('echelle_id')
+                ->groupBy('categorie_id')->map(fn ($g) => $g->pluck('echelle_id')->unique()->values()),
+            // Quadruplet « categorie-echelle-classe-echelon » → indice
+            'indiceGrille'      => $indices->filter(fn ($i) =>
+                    $i->categorie_id && $i->echelle_id && $i->classe_id && $i->echelon_id)
+                ->mapWithKeys(fn ($i) => [
+                    "{$i->categorie_id}-{$i->echelle_id}-{$i->classe_id}-{$i->echelon_id}" => $i->id,
+                ]),
+
+            // --- Cascade géographique (JS) : Région → Province/Circonscription → Commune ---
+            'provincesParRegion'   => $provinces->groupBy('region_id')
+                ->map(fn ($g) => $g->map(fn ($p) => ['id' => $p->id, 'libelle' => $p->libelle])->values()),
+            'localitesParProvince' => $localitesProvin->groupBy('province_id')
+                ->map(fn ($g) => $g->map(fn ($l) => ['id' => $l->id, 'libelle' => $l->libelle])->values()),
         ];
     }
 }

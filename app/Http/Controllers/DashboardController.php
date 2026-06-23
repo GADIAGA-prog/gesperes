@@ -18,6 +18,8 @@ class DashboardController extends Controller
             'parSexe'        => $this->dashboard->effectifParSexe(),
             'parRegion'      => $this->dashboard->effectifParRegion(),
             'parEmploi'      => $this->dashboard->effectifParEmploi(),
+            'parCategorie'   => $this->dashboard->effectifParCategorie(),
+            'masse'          => $this->dashboard->masseSalariale(),
             'departsRetraite' => $this->dashboard->departsRetraiteParAnnee(),
             'trancheAge'     => $this->dashboard->trancheAge(),
         ]);

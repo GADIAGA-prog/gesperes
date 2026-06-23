@@ -1,8 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Structures')
-@section('header', 'Organigramme des structures')
+@section('header', 'Gestion des effectifs — Organigramme des structures')
 
 @section('content')
+@include('gestion-effectifs._tabs')
 <div class="flex items-center justify-between mb-4">
     <p class="text-sm text-gray-500">{{ $structures->count() }} structure(s)</p>
     @can('structures.create')

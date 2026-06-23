@@ -44,6 +44,8 @@ class StoreAgentRequest extends FormRequest
 
             // Affectation
             'structure_id' => ['nullable', 'exists:structures,id'],
+            'region_id' => ['nullable', 'exists:regions,id'],
+            'province_id' => ['nullable', 'exists:provinces,id'],
             'region' => ['nullable', 'string', 'max:80'],
             'province' => ['nullable', 'string', 'max:80'],
             'commune' => ['nullable', 'string', 'max:80'],

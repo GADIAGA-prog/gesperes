@@ -2,16 +2,19 @@
 @section('title', $config['titre'])
 @section('header', $config['titre'])
 @section('content')
-<div class="mb-4 flex items-center justify-between">
+<div class="mb-4 flex items-center justify-between gap-2">
     <a href="{{ route('referentiels.index') }}" class="text-sm text-institution-600 hover:underline">← Tous les référentiels</a>
-    @if (($config['importable'] ?? false) && $type === 'indices')
+    <div class="flex gap-2">
         @can('settings.manage')
-        <div class="flex gap-2">
-            <a href="{{ route('referentiels.indices.template') }}" class="btn btn-secondary">⬇ Modèle Excel</a>
-            <a href="{{ route('referentiels.indices.import.form') }}" class="btn btn-primary">Importer des indices</a>
-        </div>
+            @if ($type === 'indices')
+                <a href="{{ route('referentiels.indices.template') }}" class="btn btn-secondary">⬇ Modèle indices</a>
+                <a href="{{ route('referentiels.indices.import.form') }}" class="btn btn-primary">Importer indices</a>
+            @else
+                <a href="{{ route('referentiels.import.form', $type) }}" class="btn btn-primary">⬆ Importer Excel</a>
+            @endif
         @endcan
-    @endif
+        <a href="{{ route('referentiels.export', $type) }}" class="btn btn-secondary">⬇ Exporter Excel</a>
+    </div>
 </div>
 
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -20,6 +23,7 @@
             <thead><tr class="text-left text-xs uppercase text-gray-500">
                 <th class="table-head">Code</th><th class="table-head">Libellé</th>
                 @foreach ($config['champs'] as $nom => $def)<th class="table-head">{{ $def['label'] }}</th>@endforeach
+                @if ($type === 'indices')<th class="table-head">Salaire indiciaire</th>@endif
                 <th class="table-head">Actif</th>
                 @can('settings.manage')<th class="table-head text-right"></th>@endcan
             </tr></thead>
@@ -36,6 +40,7 @@
                                 @else {{ $item->$nom ?: '—' }}@endif
                             </td>
                         @endforeach
+                        @if ($type === 'indices')<td class="px-4 py-2.5 text-sm text-gray-700">{{ $item->salaire_indiciaire !== null ? number_format($item->salaire_indiciaire, 2, ',', ' ') . ' F' : '—' }}</td>@endif
                         <td class="px-4 py-2.5"><span class="badge {{ $item->actif ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600' }}">{{ $item->actif ? 'Oui' : 'Non' }}</span></td>
                         @can('settings.manage')
                         <td class="px-4 py-2.5 text-right text-sm whitespace-nowrap">

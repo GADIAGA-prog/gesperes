@@ -21,6 +21,19 @@
         @can('documents.view')
             <a href="{{ route('agents.documents.index', $agent) }}" class="btn btn-secondary">Documents</a>
         @endcan
+        @can('carriere.manage')
+            <a href="{{ route('carriere.create', ['agent' => $agent->id]) }}" class="btn btn-secondary">Acte de carrière</a>
+        @endcan
+        @can('mouvements.manage')
+            <a href="{{ route('mouvements.create', ['agent' => $agent->id]) }}" class="btn btn-secondary">Mouvement</a>
+        @endcan
+        @can('indemnites.view')
+            <a href="{{ route('agents.indemnites.agent', $agent) }}" class="btn btn-secondary">Indemnités</a>
+        @endcan
+        @can('competences.view')
+            <a href="{{ route('agents.competences.agent', $agent) }}" class="btn btn-secondary">Compétences</a>
+        @endcan
+        <a href="{{ route('agents.pdf', $agent) }}" class="btn btn-secondary">Fiche PDF</a>
     </div>
 </div>
 
@@ -93,4 +106,106 @@
         <p class="text-sm text-gray-600 whitespace-pre-line">{{ $agent->observations }}</p>
     </div>
 @endif
+
+@can('carriere.view')
+    <div class="card mt-6">
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-700">Historique de carrière</h3>
+            @can('carriere.manage')
+                <a href="{{ route('carriere.create', ['agent' => $agent->id]) }}" class="text-sm text-institution-700 hover:underline">+ Ajouter un acte</a>
+            @endcan
+        </div>
+        @forelse ($agent->evenementsCarriere as $e)
+            <div class="flex flex-wrap items-start gap-3 py-2 {{ ! $loop->last ? 'border-b border-gray-50' : '' }}">
+                <span class="text-sm text-gray-500 w-24 shrink-0">{{ $e->date_effet?->format('d/m/Y') }}</span>
+                <span class="badge {{ $e->type?->color() }} shrink-0">{{ $e->type?->label() }}</span>
+                <span class="text-sm text-gray-700 flex-1 min-w-[12rem]">
+                    {{ $e->description ?: '—' }}
+                    @if ($e->reference_acte)
+                        <span class="text-gray-400 font-mono text-xs">({{ $e->reference_acte }})</span>
+                    @endif
+                </span>
+            </div>
+        @empty
+            <p class="text-sm text-gray-400">Aucun acte de carrière enregistré.</p>
+        @endforelse
+    </div>
+@endcan
+
+@can('mouvements.view')
+    @php $coulFam = ['activite'=>'bg-green-100 text-green-700','sortie_temporaire'=>'bg-amber-100 text-amber-800','sortie_definitive'=>'bg-red-100 text-red-700']; @endphp
+    <div class="card mt-6">
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-700">Mouvements du personnel</h3>
+            @can('mouvements.manage')
+                <a href="{{ route('mouvements.create', ['agent' => $agent->id]) }}" class="text-sm text-institution-700 hover:underline">+ Ajouter un mouvement</a>
+            @endcan
+        </div>
+        @forelse ($agent->mouvements as $m)
+            <div class="flex flex-wrap items-start gap-3 py-2 {{ ! $loop->last ? 'border-b border-gray-50' : '' }}">
+                <span class="text-sm text-gray-500 w-24 shrink-0">{{ $m->date_effet?->format('d/m/Y') }}</span>
+                <span class="badge {{ $coulFam[$m->famille?->value] ?? 'bg-gray-100 text-gray-700' }} shrink-0">{{ $m->famille?->label() }}</span>
+                <span class="text-sm text-gray-700 flex-1 min-w-[12rem]">
+                    {{ $m->anciennePosition?->libelle ?? '—' }} → <span class="font-medium">{{ $m->nouvellePosition?->libelle ?? '—' }}</span>
+                    @if ($m->reference_acte)<span class="text-gray-400 font-mono text-xs">({{ $m->reference_acte }})</span>@endif
+                </span>
+            </div>
+        @empty
+            <p class="text-sm text-gray-400">Aucun mouvement enregistré.</p>
+        @endforelse
+    </div>
+@endcan
+
+@can('discipline.view')
+    <div class="card mt-6">
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-700">Discipline</h3>
+            @can('discipline.manage')
+                <a href="{{ route('discipline.create', ['agent' => $agent->id]) }}" class="text-sm text-institution-700 hover:underline">+ Ajouter un acte</a>
+            @endcan
+        </div>
+        @forelse ($agent->dossiersDisciplinaires as $d)
+            <div class="flex flex-wrap items-start gap-3 py-2 {{ ! $loop->last ? 'border-b border-gray-50' : '' }}">
+                <span class="text-sm text-gray-500 w-24 shrink-0">{{ $d->date_acte?->format('d/m/Y') }}</span>
+                <span class="badge {{ $d->type?->color() }} shrink-0">{{ $d->type?->label() }}</span>
+                <span class="text-sm text-gray-700 flex-1 min-w-[12rem]">{{ \Illuminate\Support\Str::limit($d->motif, 90) }}</span>
+            </div>
+        @empty
+            <p class="text-sm text-gray-400">Aucun dossier disciplinaire.</p>
+        @endforelse
+    </div>
+@endcan
+
+@can('performance.view')
+    <div class="card mt-6">
+        <div class="flex items-center justify-between mb-3 pb-2 border-b border-gray-100">
+            <h3 class="font-semibold text-gray-700">Évaluations de performance</h3>
+            @can('performance.manage')
+                <a href="{{ route('performance.create', ['agent' => $agent->id]) }}" class="text-sm text-institution-700 hover:underline">+ Nouvelle évaluation</a>
+            @endcan
+        </div>
+        @forelse ($agent->evaluations as $e)
+            <div class="flex flex-wrap items-center gap-3 py-2 {{ ! $loop->last ? 'border-b border-gray-50' : '' }}">
+                <span class="text-sm font-medium w-16 shrink-0">{{ $e->periode }}</span>
+                <span class="text-sm text-gray-700 flex-1">{{ $e->note !== null ? rtrim(rtrim(number_format($e->note,2),'0'),'.') . ' / 20' : 'Non noté' }} — {{ \Illuminate\Support\Str::limit($e->appreciation, 70) ?: '—' }}</span>
+                <span class="text-xs text-gray-400">{{ $e->statut === 'valide' ? 'Validée' : 'Brouillon' }}</span>
+            </div>
+        @empty
+            <p class="text-sm text-gray-400">Aucune évaluation.</p>
+        @endforelse
+    </div>
+@endcan
+
+@can('competences.view')
+    @if ($agent->competences->isNotEmpty())
+    <div class="card mt-6">
+        <h3 class="font-semibold text-gray-700 mb-3 pb-2 border-b border-gray-100">Compétences</h3>
+        <div class="flex flex-wrap gap-2">
+            @foreach ($agent->competences as $c)
+                <span class="badge bg-institution-50 text-institution-700">{{ $c->libelle }}</span>
+            @endforeach
+        </div>
+    </div>
+    @endif
+@endcan
 @endsection

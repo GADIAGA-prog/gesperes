@@ -62,6 +62,8 @@
         </footer>
     </div>
 </div>
+
+@include('partials.chatbox')
 @stack('scripts')
 </body>
 </html>

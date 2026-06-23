@@ -41,7 +41,27 @@
     </div>
 </div>
 
+{{-- Masse salariale (estimée) --}}
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="card">
+        <p class="text-sm text-gray-500">Masse — traitement (mensuel)</p>
+        <p class="text-xl font-bold text-institution-700">{{ number_format($masse['traitement'], 0, ',', ' ') }} <span class="text-xs font-normal text-gray-400">FCFA</span></p>
+    </div>
+    <div class="card">
+        <p class="text-sm text-gray-500">Masse — indemnités (mensuel)</p>
+        <p class="text-xl font-bold text-institution-700">{{ number_format($masse['indemnites'], 0, ',', ' ') }} <span class="text-xs font-normal text-gray-400">FCFA</span></p>
+    </div>
+    <div class="card">
+        <p class="text-sm text-gray-500">Masse salariale annuelle</p>
+        <p class="text-xl font-bold text-green-700">{{ number_format($masse['total_annuel'], 0, ',', ' ') }} <span class="text-xs font-normal text-gray-400">FCFA</span></p>
+    </div>
+</div>
+
 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div class="card">
+        <h3 class="font-semibold text-gray-700 mb-3">Effectif par catégorie</h3>
+        <div id="chartCategorie"></div>
+    </div>
     <div class="card">
         <h3 class="font-semibold text-gray-700 mb-3">Répartition par sexe</h3>
         <div id="chartSexe"></div>
@@ -100,6 +120,16 @@ document.addEventListener('DOMContentLoaded', function () {
         colors: ['#d97706'],
         stroke: { curve: 'smooth', width: 3 },
         markers: { size: 4 },
+    }).render();
+
+    new ApexCharts(document.querySelector('#chartCategorie'), {
+        chart: { type: 'bar', height: 280 },
+        series: [{ name: 'Agents', data: @json(array_values($parCategorie)) }],
+        xaxis: { categories: @json(array_keys($parCategorie)) },
+        colors: ['#7c3aed'],
+        plotOptions: { bar: { borderRadius: 4, distributed: true } },
+        dataLabels: { enabled: false },
+        legend: { show: false },
     }).render();
 });
 </script>

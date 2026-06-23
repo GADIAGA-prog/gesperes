@@ -2,6 +2,8 @@
 @section('title', 'Détail affectation')
 @section('header', 'Détail de l\'affectation')
 @section('content')
+@include('mouvements._tabs')
+
 <div class="card max-w-2xl">
     <dl class="grid grid-cols-2 gap-y-3 text-sm">
         <dt class="text-gray-500">Agent</dt><dd class="font-medium">{{ $affectation->agent?->nom_complet }}</dd>

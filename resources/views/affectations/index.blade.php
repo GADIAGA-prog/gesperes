@@ -1,7 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Affectations')
-@section('header', 'Mouvements & affectations')
+@section('header', 'Mouvements du personnel')
 @section('content')
+@include('mouvements._tabs')
+
 <div class="flex items-center justify-between mb-4">
     <p class="text-sm text-gray-500">{{ $affectations->total() }} mouvement(s)</p>
     @can('affectations.create')

@@ -94,7 +94,12 @@ categories, echelles, classes, echelons, indices
 emplois, fonctions, postes, positions_administratives
 
 -- Référentiels géo/enseignement --
-zones, localites, type_enseignements, specialites
+regions, provinces, zones, localites, type_enseignements, specialites
+-- Découpage : Région → Province → Localité (commune). Réforme MESFPTT :
+-- « Kadiogo » (ex-Centre) et « Guiriko » (ex-Hauts-Bassins) n'ont pas de provinces
+-- mais des Circonscriptions d'éducation (CESFPT OUAGA 1-5 / BOBO 1-4) stockées
+-- dans la table provinces. L'agent porte region_id/province_id (FK) + localite_id,
+-- et conserve region/province/commune en texte (synchronisés par AgentService).
 
 -- Spatie --
 roles, permissions, model_has_roles, model_has_permissions, role_has_permissions
@@ -121,6 +126,15 @@ dashboard.view
 agents.view / create / update / delete / import / export
 structures.view / create / update / delete
 affectations.view / create / update / delete
+carriere.view / carriere.manage
+mouvements.view / mouvements.manage
+indemnites.view / indemnites.manage
+formations.view / formations.manage
+competences.view / competences.manage
+performance.view / performance.manage
+discipline.view / discipline.manage
+gpec.view
+alertes.view
 documents.view / upload / download / delete
 users.view / create / update / delete
 settings.view / settings.manage
@@ -298,21 +312,30 @@ php artisan tinker
 | Tableau de bord (ApexCharts) | ✅ Complet |
 | Import Excel agents | ✅ Complet |
 | Export Excel agents | ✅ Complet |
+| Export PDF (fiche agent + liste filtrée) | ✅ Complet |
+| Carrière (avancements, promotions, nominations) | ✅ Complet |
+| Mouvements du personnel (sorties temporaires/définitives) | ✅ Complet |
+| Gestion documentaire (dossier, archivage, recherche, ZIP) | ✅ Complet |
+| Indemnités (référentiel + barèmes GESPER + bulletin PDF) | ✅ Complet |
+| Alertes RH + notifications persistantes (tâche planifiée) | ✅ Complet |
+| Congés & absences (pointage + congés + soldes) | ✅ Complet |
+| Formation (sessions + bénéficiaires) | ✅ Complet |
+| Rapports statistiques avancés (effectifs, pyramide, masse salariale) | ✅ Complet |
+| Discipline (demandes d'explication, sanctions, recours) | ✅ Complet |
+| Performance (objectifs, notation, appréciation) | ✅ Complet |
+| Compétences (référentiel + rattachement agent) | ✅ Complet |
+| GPEC (départs retraite, besoins par emploi, cartographie compétences) | ✅ Complet |
+| Notifications e-mail (digest, en plus du in-app) | ✅ Complet |
 | Audit & traçabilité | ✅ Complet |
 | Profil utilisateur | ✅ Complet |
 
-## 📋 Modules Phase 2 — À développer
+## 📋 Modules Phase 3 (GRH avancée) — Tous livrés ✅
 
-| Module | Priorité |
-|---|---|
-| Export PDF (fiches agents, listes) | Haute |
-| Carrière avancée (avancements, nominations) | Haute |
-| Indemnités (décret 2014-427) | Haute |
-| Alertes RH (retraite, documents expirés) | Moyenne |
-| Congés & absences | Moyenne |
-| Rapports statistiques avancés | Moyenne |
-| Formation | Basse |
-| Notifications email | Basse |
+Les modules du kit de développement (V1 MVP + V2 GRH avancée) sont tous implémentés.
+Pistes d'évolution futures : intégration paie complète, workflow de validation
+multi-niveaux, portail agent (self-service), API mobile.
+
+> Voir [docs/audit-kit-developpement.md](docs/audit-kit-developpement.md) pour l'audit complet kit vs réalisé.
 
 ---
 
@@ -326,7 +349,9 @@ Ces paramètres sont des valeurs par défaut à confirmer officiellement :
 - [ ] Volume horaire réglementaire par type d'enseignement
 - [ ] Liste complète des spécialités d'enseignement
 - [ ] Liste complète des localités et leurs zones (décret 2014-427)
-- [ ] Taux d'indemnités applicables aux enseignants du secondaire
+- [x] Taux d'indemnités — barèmes du décret 2014-427 importés depuis GESPER
+      (astreinte, logement, spécifique harmonisé, technicité) via `IndemniteBaremeSeeder`.
+      Reste à valider : règles de cumul et d'éligibilité par position/statut.
 
 ---
 

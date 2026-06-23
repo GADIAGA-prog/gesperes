@@ -120,6 +120,6 @@ class ReferentielSeeder extends Seeder
         }
         $this->command->info('✓ Types d\'enseignement');
 
-        $this->command->warn('  ℹ  Complétez les échelles, indices, spécialités et localités depuis l\'interface Référentiels.');
+        $this->command->warn('  ℹ  Complétez les échelles, indices et spécialités depuis l\'interface Référentiels.');
     }
 }

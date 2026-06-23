@@ -69,6 +69,36 @@ class DashboardService
             ->all();
     }
 
+    public function effectifParCategorie(): array
+    {
+        return Agent::join('categories', 'agents.categorie_id', '=', 'categories.id')
+            ->select('categories.code', DB::raw('count(*) as total'))
+            ->groupBy('categories.code')
+            ->orderBy('categories.code')
+            ->pluck('total', 'categories.code')
+            ->all();
+    }
+
+    /** Masse salariale estimée (traitement indiciaire + indemnités attribuées). */
+    public function masseSalariale(): array
+    {
+        $point = (float) config('grille.point_annuel', 0);
+        $mois = (int) config('grille.mois_par_an', 12) ?: 12;
+
+        $sommeIndices = (int) Agent::join('indices', 'agents.indice_id', '=', 'indices.id')
+            ->whereNull('agents.deleted_at')->sum('indices.valeur');
+
+        $traitement = $point ? round($sommeIndices * $point / $mois) : 0;
+        $indemnites = (float) \App\Models\AgentIndemnite::where('actif', true)->sum('montant');
+
+        return [
+            'traitement'   => $traitement,
+            'indemnites'   => $indemnites,
+            'total'        => $traitement + $indemnites,
+            'total_annuel' => ($traitement + $indemnites) * 12,
+        ];
+    }
+
     public function departsRetraiteParAnnee(int $annees = 6): array
     {
         $resultat = [];

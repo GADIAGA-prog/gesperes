@@ -1,7 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Journal d\'audit')
-@section('header', 'Journal d\'audit')
+@section('header', 'Gestion accès — Journal d\'audit')
 @section('content')
+@include('gestion-acces._tabs')
 <form method="GET" class="card mb-4 flex flex-wrap gap-3 items-end">
     <div>
         <label class="label">Catégorie</label>

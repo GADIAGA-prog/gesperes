@@ -2,6 +2,8 @@
 @section('title', 'Nouvelle affectation')
 @section('header', 'Créer une affectation')
 @section('content')
+@include('mouvements._tabs')
+
 <form method="POST" action="{{ route('affectations.store') }}" class="card max-w-3xl">
     @csrf
     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

@@ -60,6 +60,18 @@ class AgentService
         // R9 : allocation familiale calculée selon le nombre d'enfants
         $data['allocation_familiale'] = $this->allocation->calculer((int) ($data['nombre_enfants'] ?? 0));
 
+        // Affectation géographique : on conserve les libellés texte (export, PDF, filtres,
+        // import Excel) en les synchronisant depuis les clés étrangères quand elles sont fournies.
+        if (! empty($data['region_id'])) {
+            $data['region'] = \App\Models\Region::find($data['region_id'])?->libelle;
+        }
+        if (! empty($data['province_id'])) {
+            $data['province'] = \App\Models\Province::find($data['province_id'])?->libelle;
+        }
+        if (! empty($data['localite_id'])) {
+            $data['commune'] = \App\Models\Localite::find($data['localite_id'])?->libelle;
+        }
+
         return $data;
     }
 

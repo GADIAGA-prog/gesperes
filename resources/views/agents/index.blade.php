@@ -1,8 +1,9 @@
 @extends('layouts.app')
 @section('title', 'Agents')
-@section('header', 'Gestion des agents')
+@section('header', 'Gestion des effectifs — Agents')
 
 @section('content')
+@include('gestion-effectifs._tabs')
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
     <p class="text-sm text-gray-500">{{ $agents->total() }} agent(s) enregistré(s)</p>
     <div class="flex gap-2">
@@ -10,7 +11,8 @@
             <a href="{{ route('agents.import.form') }}" class="btn btn-secondary">Importer</a>
         @endcan
         @can('agents.export')
-            <a href="{{ route('agents.export', request()->query()) }}" class="btn btn-secondary">Exporter</a>
+            <a href="{{ route('agents.export', request()->query()) }}" class="btn btn-secondary">Exporter Excel</a>
+            <a href="{{ route('agents.export.pdf', request()->query()) }}" class="btn btn-secondary">Exporter PDF</a>
         @endcan
         @can('agents.create')
             <a href="{{ route('agents.create') }}" class="btn btn-primary">+ Nouvel agent</a>

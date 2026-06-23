@@ -9,8 +9,10 @@ class Localite extends Model
 {
     use Auditable;
 
-    protected $fillable = ['code', 'libelle', 'zone_id', 'region', 'province', 'commune', 'actif'];
+    protected $fillable = ['code', 'libelle', 'zone_id', 'province_id', 'region', 'province', 'commune', 'actif'];
     protected $casts = ['actif' => 'boolean'];
 
     public function zone() { return $this->belongsTo(Zone::class); }
+
+    public function province() { return $this->belongsTo(Province::class); }
 }

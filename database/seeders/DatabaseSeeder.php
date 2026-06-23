@@ -11,9 +11,12 @@ class DatabaseSeeder extends Seeder
         $this->command->info('── GesPerES — Initialisation de la base de données ──');
 
         $this->call([
-            RoleSeeder::class,       // 1. Permissions & rôles
+            RoleSeeder::class,        // 1. Permissions & rôles
             ReferentielSeeder::class, // 2. Nomenclatures de base
-            UserSeeder::class,        // 3. Compte super-admin (dépend des rôles)
+            GeographieSeeder::class,  // 3. Découpage administratif (régions, provinces, chefs-lieux)
+            MotifAbsenceSeeder::class,// 4. Motifs d'absence (module présence/congés)
+            IndemniteBaremeSeeder::class, // 5. Barèmes d'indemnités (décret 2014-427, données GESPER)
+            UserSeeder::class,        // 6. Compte super-admin (dépend des rôles)
         ]);
 
         $this->command->info('✓ Base de données initialisée avec succès.');

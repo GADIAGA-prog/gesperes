@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Enums\TypeStructure;
 use App\Http\Requests\StoreStructureRequest;
 use App\Http\Requests\UpdateStructureRequest;
+use App\Models\Action;
 use App\Models\Localite;
+use App\Models\Province;
+use App\Models\Region;
 use App\Models\Structure;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -91,10 +94,20 @@ class StructureController extends Controller
             ->when($exclure, fn ($query) => $query->where('id', '!=', $exclure->id))
             ->pluck('libelle', 'id');
 
+        $provinces       = Province::orderBy('libelle')->get(['id', 'libelle', 'region_id']);
+        $localitesProvin = Localite::whereNotNull('province_id')->orderBy('libelle')->get(['id', 'libelle', 'province_id']);
+
         return [
             'parents'   => $parents,
-            'localites' => Localite::orderBy('libelle')->pluck('libelle', 'id'),
+            'regions'   => Region::orderBy('libelle')->pluck('libelle', 'id'),
             'types'     => collect(TypeStructure::cases())->mapWithKeys(fn ($t) => [$t->value => $t->label()]),
+            'actions'   => Action::orderBy('code')->get()->mapWithKeys(fn ($a) => [$a->id => $a->code . ' — ' . $a->libelle]),
+
+            // Cascade géographique : Région → Province/Circonscription → Commune.
+            'provincesParRegion'   => $provinces->groupBy('region_id')
+                ->map(fn ($g) => $g->map(fn ($p) => ['id' => $p->id, 'libelle' => $p->libelle])->values()),
+            'localitesParProvince' => $localitesProvin->groupBy('province_id')
+                ->map(fn ($g) => $g->map(fn ($l) => ['id' => $l->id, 'libelle' => $l->libelle])->values()),
         ];
     }
 }

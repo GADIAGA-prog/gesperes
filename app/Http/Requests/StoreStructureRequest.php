@@ -21,8 +21,9 @@ class StoreStructureRequest extends FormRequest
             'libelle'     => ['required', 'string', 'max:255'],
             'type'        => ['required', new Enum(TypeStructure::class)],
             'parent_id'   => ['nullable', 'exists:structures,id'],
-            'region'      => ['nullable', 'string', 'max:120'],
-            'province'    => ['nullable', 'string', 'max:120'],
+            'action_id'   => ['nullable', 'exists:actions,id'],
+            'region_id'   => ['nullable', 'exists:regions,id'],
+            'province_id' => ['nullable', 'exists:provinces,id'],
             'localite_id' => ['nullable', 'exists:localites,id'],
             'actif'       => ['nullable', 'boolean'],
         ];

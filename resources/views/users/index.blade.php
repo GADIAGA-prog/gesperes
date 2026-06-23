@@ -1,7 +1,8 @@
 @extends('layouts.app')
 @section('title', 'Utilisateurs')
-@section('header', 'Comptes utilisateurs')
+@section('header', 'Gestion accès — Comptes utilisateurs')
 @section('content')
+@include('gestion-acces._tabs')
 <div class="flex items-center justify-between mb-4">
     <p class="text-sm text-gray-500">{{ $users->total() }} compte(s)</p>
     @can('users.create')<a href="{{ route('users.create') }}" class="btn btn-primary">+ Nouvel utilisateur</a>@endcan

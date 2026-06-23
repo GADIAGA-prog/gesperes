@@ -9,6 +9,6 @@ class Fonction extends Model
 {
     use Auditable;
 
-    protected $fillable = ['code', 'libelle', 'actif'];
-    protected $casts = ['actif' => 'boolean'];
+    protected $fillable = ['code', 'libelle', 'indemnite_responsabilite', 'actif'];
+    protected $casts = ['actif' => 'boolean', 'indemnite_responsabilite' => 'integer'];
 }

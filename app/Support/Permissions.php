@@ -32,6 +32,31 @@ final class Permissions
             'affectations.update' => 'Modifier une affectation',
             'affectations.delete' => 'Supprimer une affectation',
         ],
+        'Carrière' => [
+            'carriere.view'   => 'Consulter la carrière des agents',
+            'carriere.manage' => 'Enregistrer les actes de carrière',
+        ],
+        'Mouvements' => [
+            'mouvements.view'   => 'Consulter les mouvements du personnel',
+            'mouvements.manage' => 'Enregistrer les mouvements du personnel',
+        ],
+        'Indemnités' => [
+            'indemnites.view'   => 'Consulter les indemnités',
+            'indemnites.manage' => 'Gérer les indemnités et attributions',
+        ],
+        'Développement RH' => [
+            'formations.view'    => 'Consulter les formations',
+            'formations.manage'  => 'Gérer les formations',
+            'competences.view'   => 'Consulter les compétences',
+            'competences.manage' => 'Gérer les compétences',
+            'performance.view'   => 'Consulter les évaluations',
+            'performance.manage' => 'Gérer les évaluations',
+            'gpec.view'          => 'Consulter la GPEC',
+        ],
+        'Discipline' => [
+            'discipline.view'   => 'Consulter les dossiers disciplinaires',
+            'discipline.manage' => 'Gérer les dossiers disciplinaires',
+        ],
         'Documents RH' => [
             'documents.view'     => 'Consulter les documents',
             'documents.upload'   => 'Téléverser un document',
@@ -44,9 +69,24 @@ final class Permissions
             'users.update' => 'Modifier un utilisateur',
             'users.delete' => 'Supprimer un utilisateur',
         ],
+        'Présence & Congés' => [
+            'pointage.view'     => 'Consulter les pointages',
+            'pointage.manage'   => 'Saisir / gérer les pointages',
+            'conges.view'       => 'Consulter les congés',
+            'conges.request'    => 'Demander un congé',
+            'conges.validate'   => 'Valider les congés',
+            'presence.reports'  => 'Éditer les fiches de présence (A/B/C)',
+        ],
+        'Budget des structures' => [
+            'budget.view'   => 'Consulter le budget et les activités',
+            'budget.manage' => 'Gérer le budget et les activités',
+        ],
         'Paramétrage' => [
             'settings.view'   => 'Consulter le paramétrage',
             'settings.manage' => 'Gérer les référentiels',
+        ],
+        'Alertes RH' => [
+            'alertes.view' => 'Consulter les alertes RH',
         ],
         'Audit' => [
             'audit.view' => 'Consulter le journal d\'audit',
