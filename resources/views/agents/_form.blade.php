@@ -45,7 +45,28 @@
 
     {{-- Affectation --}}
     <div x-show="tab === 'affectation'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <x-form.select name="structure_id" label="Structure" :options="$structures" :selected="$a?->structure_id" />
+        {{-- Structure : cascade hiérarchique (parent → … → service/poste).
+             La structure feuille sélectionnée (le service = le poste réel) devient structure_id. --}}
+        <div class="sm:col-span-2 lg:col-span-3" data-cascade-structure
+             x-data="cascadeStructure(@js($structuresCascade), @js((string) old('structure_id', $a?->structure_id)))">
+            <label class="label">Structure d'affectation
+                <span class="font-normal text-xs text-gray-400">— descendez jusqu'au service / poste</span>
+            </label>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-1">
+                <template x-for="niv in niveaux" :key="niv.index">
+                    <select class="input" @change="choisir(niv.index, $event.target.value)">
+                        <option value="">— Choisir —</option>
+                        <template x-for="opt in niv.options" :key="opt.id">
+                            <option :value="opt.id" :selected="String(opt.id) === String(niv.valeur)"
+                                    x-text="opt.feuille ? opt.libelle : (opt.libelle + ' ›')"></option>
+                        </template>
+                    </select>
+                </template>
+            </div>
+            <input type="hidden" name="structure_id" :value="structureId">
+            @error('structure_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+        </div>
+
         <x-form.select name="region_id" label="Région" :options="$regions" :selected="$a?->region_id" />
 
         {{-- Province/Circonscription & Commune : options injectées en cascade par JS --}}
@@ -176,6 +197,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Saisie intelligente : toutes les listes déroulantes deviennent recherchables.
     window.agentSelects = {};
     conteneur.querySelectorAll('select').forEach(function (sel) {
+        if (sel.closest('[data-cascade-structure]')) return; // cascade Alpine : selects natifs
         window.agentSelects[sel.id] = new TomSelect(sel, {
             allowEmptyOption: true,
             create: false,
@@ -218,5 +240,61 @@ document.addEventListener('DOMContentLoaded', function () {
     tsRegion.on('change', function () { majProvinces(''); majCommunes(''); });
     tsProvince.on('change', function () { majCommunes(''); });
 });
+</script>
+@endpush
+
+@push('scripts')
+<script>
+// Cascade hiérarchique des structures : on descend parent → … → service/poste.
+// La structure feuille choisie devient structure_id (champ caché).
+function cascadeStructure(config, valeurActuelle) {
+    return {
+        enfants: config.enfants || {},
+        parents: config.parents || {},
+        selection: [],
+
+        init() {
+            // Reconstitue le chemin racine → structure courante en remontant les parents.
+            this.selection = this.cheminVers(valeurActuelle);
+        },
+
+        cheminVers(id) {
+            const chemin = [];
+            let courant = id ? String(id) : '';
+            let garde = 0;
+            while (courant && this.parents[courant] !== undefined && garde < 12) {
+                chemin.unshift(courant);
+                const parent = this.parents[courant];
+                courant = parent ? String(parent) : '';
+                garde++;
+            }
+            return chemin;
+        },
+
+        get niveaux() {
+            const niv = [];
+            let parent = 'racine';
+            for (let i = 0; ; i++) {
+                const options = this.enfants[parent] || [];
+                if (! options.length) break;          // plus d'enfants → on arrête la cascade
+                const valeur = this.selection[i] || '';
+                niv.push({ index: i, options, valeur });
+                if (! valeur) break;                  // niveau pas encore choisi
+                parent = String(valeur);
+            }
+            return niv;
+        },
+
+        choisir(index, valeur) {
+            this.selection = this.selection.slice(0, index);
+            if (valeur) this.selection[index] = String(valeur);
+        },
+
+        get structureId() {
+            const choisis = this.selection.filter(Boolean);
+            return choisis.length ? choisis[choisis.length - 1] : '';
+        },
+    };
+}
 </script>
 @endpush

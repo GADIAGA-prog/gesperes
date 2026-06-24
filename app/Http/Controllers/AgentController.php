@@ -126,6 +126,10 @@ class AgentController extends Controller
         $provinces       = Province::orderBy('libelle')->get(['id', 'libelle', 'region_id']);
         $localitesProvin = Localite::whereNotNull('province_id')->orderBy('libelle')->get(['id', 'libelle', 'province_id']);
 
+        // Arborescence des structures pour la cascade hiérarchique (parent → … → service/poste).
+        $structuresArbre = Structure::orderBy('libelle')->get(['id', 'libelle', 'parent_id']);
+        $parentsAvecEnfants = $structuresArbre->pluck('parent_id')->filter()->unique()->flip();
+
         return [
             'emplois'     => $emplois,
             'fonctions'   => Fonction::orderBy('libelle')->pluck('libelle', 'id'),
@@ -137,6 +141,17 @@ class AgentController extends Controller
             'indices'     => $indices->pluck('valeur', 'id'),
             'positions'   => PositionAdministrative::orderBy('libelle')->pluck('libelle', 'id'),
             'structures'  => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            // Cascade hiérarchique des structures (JS) : enfants par parent + carte des parents.
+            'structuresCascade' => [
+                'enfants' => $structuresArbre
+                    ->groupBy(fn ($s) => $s->parent_id ? (string) $s->parent_id : 'racine')
+                    ->map(fn ($grp) => $grp->map(fn ($s) => [
+                        'id'      => $s->id,
+                        'libelle' => $s->libelle,
+                        'feuille' => ! $parentsAvecEnfants->has($s->id),
+                    ])->values()),
+                'parents' => $structuresArbre->mapWithKeys(fn ($s) => [$s->id => $s->parent_id]),
+            ],
             'etablissements' => \App\Models\Agent::whereNotNull('etablissement')->where('etablissement', '!=', '')
                 ->distinct()->orderBy('etablissement')->pluck('etablissement'),
             'regions'     => Region::orderBy('libelle')->pluck('libelle', 'id'),
