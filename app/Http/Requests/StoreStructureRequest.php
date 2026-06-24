@@ -25,6 +25,7 @@ class StoreStructureRequest extends FormRequest
             'region_id'   => ['nullable', 'exists:regions,id'],
             'province_id' => ['nullable', 'exists:provinces,id'],
             'localite_id' => ['nullable', 'exists:localites,id'],
+            'responsable_agent_id' => ['nullable', 'exists:agents,id'],
             'actif'       => ['nullable', 'boolean'],
         ];
     }

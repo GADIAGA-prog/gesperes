@@ -25,6 +25,18 @@
 
     <x-form.select name="action_id" label="Action budgétaire" :options="$actions ?? []" :selected="$s?->action_id" placeholder="— Aucune —" />
 
+    {{-- Responsable : recherche AJAX (43k agents) — options chargées à la frappe --}}
+    <div>
+        <label for="responsable_agent_id" class="label">Responsable de la structure</label>
+        <select name="responsable_agent_id" id="responsable_agent_id" class="input">
+            <option value="">— Aucun —</option>
+            @if ($s?->responsable)
+                <option value="{{ $s->responsable->id }}" selected>{{ $s->responsable->matricule }} — {{ $s->responsable->nom_complet }}</option>
+            @endif
+        </select>
+        @error('responsable_agent_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+    </div>
+
     <label class="flex items-center gap-2 text-sm text-gray-700 mt-2">
         <input type="checkbox" name="actif" value="1" {{ old('actif', $s?->actif ?? true) ? 'checked' : '' }} class="rounded border-gray-300 text-institution-600">
         Structure active
@@ -49,12 +61,33 @@ document.addEventListener('DOMContentLoaded', function () {
     // Saisie intelligente : toutes les listes déroulantes deviennent recherchables.
     const selects = {};
     conteneur.querySelectorAll('select').forEach(function (sel) {
+        if (sel.id === 'responsable_agent_id') return; // initialisé séparément (recherche AJAX distante)
         selects[sel.id] = new TomSelect(sel, {
             allowEmptyOption: true,
             create: false,
             sortField: { field: 'text', direction: 'asc' },
         });
     });
+
+    // --- Responsable : recherche distante d'agents (parmi ~43 000) ---
+    const urlRechercheAgents = @json(route('structures.responsables.recherche'));
+    if (document.getElementById('responsable_agent_id')) {
+        new TomSelect('#responsable_agent_id', {
+            valueField: 'id',
+            labelField: 'text',
+            searchField: 'text',
+            allowEmptyOption: true,
+            create: false,
+            preload: false,
+            shouldLoad: (q) => q.length >= 2, // évite une requête à chaque caractère
+            load: function (query, callback) {
+                fetch(urlRechercheAgents + '?q=' + encodeURIComponent(query), { headers: { Accept: 'application/json' } })
+                    .then((r) => r.json())
+                    .then((json) => callback(json))
+                    .catch(() => callback());
+            },
+        });
+    }
 
     // --- Cascade géographique : Région → Province/Circonscription → Commune ---
     const provincesParRegion   = @json($provincesParRegion);

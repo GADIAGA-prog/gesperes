@@ -112,6 +112,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/',                   [StructureController::class, 'index'])->name('index');
         Route::get('/creer',              [StructureController::class, 'create'])->name('create');
         Route::post('/',                  [StructureController::class, 'store'])->name('store');
+        // Recherche AJAX d'agents pour le champ « responsable » (placée AVANT /{structure}).
+        Route::get('/responsables/recherche', [StructureController::class, 'rechercheAgents'])->name('responsables.recherche');
         Route::get('/{structure}',        [StructureController::class, 'show'])->name('show');
         Route::get('/{structure}/modifier', [StructureController::class, 'edit'])->name('edit');
         Route::put('/{structure}',        [StructureController::class, 'update'])->name('update');

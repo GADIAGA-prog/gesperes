@@ -6,11 +6,14 @@ use App\Enums\TypeStructure;
 use App\Http\Requests\StoreStructureRequest;
 use App\Http\Requests\UpdateStructureRequest;
 use App\Models\Action;
+use App\Models\Agent;
 use App\Models\Localite;
 use App\Models\Province;
 use App\Models\Region;
 use App\Models\Structure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class StructureController extends Controller
@@ -38,6 +41,25 @@ class StructureController extends Controller
     {
         $this->authorize('structures.create');
         return view('structures.create', $this->referentiels());
+    }
+
+    /** Recherche AJAX d'agents pour alimenter le sélecteur « responsable » (43k agents → pas de chargement complet). */
+    public function rechercheAgents(Request $request): JsonResponse
+    {
+        $this->authorize('structures.view');
+
+        $agents = Agent::query()
+            ->recherche($request->input('q'))
+            ->orderBy('nom')
+            ->limit(20)
+            ->get(['id', 'matricule', 'nom', 'prenoms']);
+
+        return response()->json(
+            $agents->map(fn (Agent $a) => [
+                'id'   => $a->id,
+                'text' => "{$a->matricule} — {$a->nom_complet}",
+            ])->values()
+        );
     }
 
     public function store(StoreStructureRequest $request): RedirectResponse
