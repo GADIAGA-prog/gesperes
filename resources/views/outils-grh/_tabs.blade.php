@@ -2,7 +2,7 @@
 @php
     $tabs = [
         ['route' => 'gpec.index', 'label' => 'GPEC', 'active' => ['gpec.*'], 'perm' => 'gpec.view'],
-        ['route' => 'outils-grh.fiches-poste', 'label' => 'Fiches de poste', 'active' => ['outils-grh.fiches-poste'], 'perm' => 'gpec.view'],
+        ['route' => 'fiches-poste.index', 'label' => 'Fiches de poste', 'active' => ['fiches-poste.*'], 'perm' => 'fiches-poste.view'],
         ['route' => 'outils-grh.tpee', 'label' => 'TPEE', 'active' => ['outils-grh.tpee'], 'perm' => 'gpec.view'],
         ['route' => 'outils-grh.referentiels-mpp', 'label' => 'Référentiels MPP GRH', 'active' => ['outils-grh.referentiels-mpp'], 'perm' => 'gpec.view'],
         ['route' => 'plan-formation.index', 'label' => 'Plan de formation', 'active' => ['plan-formation.*', 'actions-formation.*'], 'perm' => 'formations.view'],

@@ -16,6 +16,7 @@ use App\Http\Controllers\ActionFormationController;
 use App\Http\Controllers\BesoinFormationController;
 use App\Http\Controllers\PlanFormationController;
 use App\Http\Controllers\OutilsGrhController;
+use App\Http\Controllers\FichePosteController;
 use App\Http\Controllers\MouvementController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IndemniteController;
@@ -285,8 +286,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     /* Outils GRH — GPEC + fiches de poste, TPEE, référentiels MPP, plan de formation */
     Route::get('/gpec', [GpecController::class, 'index'])->name('gpec.index');
+    // Fiches de poste (sous-module Outils GRH) — CRUD + PDF conforme à la trame officielle.
+    Route::prefix('outils-grh/fiches-poste')->name('fiches-poste.')->group(function () {
+        Route::get('/',                 [FichePosteController::class, 'index'])->name('index');
+        Route::get('/creer',            [FichePosteController::class, 'create'])->name('create');
+        Route::post('/',                [FichePosteController::class, 'store'])->name('store');
+        Route::get('/{fichePoste}',     [FichePosteController::class, 'show'])->name('show');
+        Route::get('/{fichePoste}/pdf', [FichePosteController::class, 'pdf'])->name('pdf');
+        Route::get('/{fichePoste}/modifier', [FichePosteController::class, 'edit'])->name('edit');
+        Route::put('/{fichePoste}',     [FichePosteController::class, 'update'])->name('update');
+        Route::delete('/{fichePoste}',  [FichePosteController::class, 'destroy'])->name('destroy');
+    });
+
     Route::prefix('outils-grh')->name('outils-grh.')->group(function () {
-        Route::get('/fiches-poste',     [OutilsGrhController::class, 'fichesPoste'])->name('fiches-poste');
         Route::get('/tpee',             [OutilsGrhController::class, 'tpee'])->name('tpee');
         Route::get('/referentiels-mpp', [OutilsGrhController::class, 'referentielsMpp'])->name('referentiels-mpp');
     });

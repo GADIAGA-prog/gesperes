@@ -12,13 +12,6 @@ use Illuminate\View\View;
  */
 class OutilsGrhController extends Controller
 {
-    public function fichesPoste(): View
-    {
-        $this->authorize('gpec.view');
-
-        return view('outils-grh.fiches-poste');
-    }
-
     public function tpee(): View
     {
         $this->authorize('gpec.view');

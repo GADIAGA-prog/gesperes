@@ -53,6 +53,10 @@ final class Permissions
             'performance.manage' => 'Gérer les évaluations',
             'gpec.view'          => 'Consulter la GPEC',
         ],
+        'Fiches de poste' => [
+            'fiches-poste.view'   => 'Consulter les fiches de poste',
+            'fiches-poste.manage' => 'Gérer les fiches de poste',
+        ],
         'Discipline' => [
             'discipline.view'   => 'Consulter les dossiers disciplinaires',
             'discipline.manage' => 'Gérer les dossiers disciplinaires',

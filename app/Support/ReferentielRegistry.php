@@ -7,6 +7,8 @@ use App\Models\Classe;
 use App\Models\Echelle;
 use App\Models\Echelon;
 use App\Models\Emploi;
+use App\Models\EmploiType;
+use App\Models\FamilleProfessionnelle;
 use App\Models\Fonction;
 use App\Models\Indice;
 use App\Models\Localite;
@@ -91,6 +93,22 @@ final class ReferentielRegistry
                 'titre' => 'Postes',
                 'singulier' => 'Poste',
                 'champs' => [],
+            ],
+            'familles-professionnelles' => [
+                'model' => FamilleProfessionnelle::class,
+                'titre' => 'Familles professionnelles',
+                'singulier' => 'Famille professionnelle',
+                'champs' => [
+                    'metier' => ['label' => 'Métier de rattachement', 'type' => 'text'],
+                ],
+            ],
+            'emplois-types' => [
+                'model' => EmploiType::class,
+                'titre' => 'Emplois-types',
+                'singulier' => 'Emploi-type',
+                'champs' => [
+                    'famille_professionnelle_id' => ['label' => 'Famille professionnelle', 'type' => 'select', 'source' => FamilleProfessionnelle::class],
+                ],
             ],
             'positions' => [
                 'model' => PositionAdministrative::class,
@@ -183,7 +201,7 @@ final class ReferentielRegistry
     {
         $plan = [
             'remuneration' => ['label' => 'Rémunération (grille indiciaire)', 'slugs' => ['categories', 'echelles', 'classes', 'echelons', 'indices']],
-            'emplois'      => ['label' => 'Emplois & carrière', 'slugs' => ['emplois', 'fonctions', 'postes', 'positions']],
+            'emplois'      => ['label' => 'Emplois & carrière', 'slugs' => ['emplois', 'fonctions', 'postes', 'positions', 'familles-professionnelles', 'emplois-types']],
             'geographie'   => ['label' => 'Découpage géographique', 'slugs' => ['regions', 'provinces', 'zones', 'localites']],
             'enseignement' => ['label' => 'Enseignement', 'slugs' => ['types-enseignement', 'specialites']],
             'budget'       => ['label' => 'Budget (nomenclature programmatique)', 'slugs' => ['programmes', 'actions']],
