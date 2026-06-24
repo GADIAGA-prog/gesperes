@@ -48,12 +48,19 @@ class AgentController extends Controller
 
         $regions = Agent::query()->whereNotNull('region')->distinct()->orderBy('region')->pluck('region');
 
-        return view('agents.index', [
+        $donnees = [
             'agents'   => $agents,
             'regions'  => $regions,
             'statuts'  => StatutDossier::cases(),
             'filtres'  => $request->only(['q', 'region', 'statut_dossier']),
-        ]);
+        ];
+
+        // Recherche en direct : on ne renvoie que le tableau de résultats (sans le layout).
+        if ($request->ajax()) {
+            return view('agents._resultats', $donnees);
+        }
+
+        return view('agents.index', $donnees);
     }
 
     public function create(): View
