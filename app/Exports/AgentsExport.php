@@ -31,7 +31,7 @@ class AgentsExport implements FromQuery, WithHeadings, WithMapping
      */
     public static function catalogue(): array
     {
-        return [
+        $colonnes = [
             'matricule'        => ['label' => 'Matricule', 'valeur' => fn (Agent $a) => $a->matricule],
             'cle'              => ['label' => 'Clé', 'valeur' => fn (Agent $a) => $a->cle],
             'nom'              => ['label' => 'Nom', 'valeur' => fn (Agent $a) => $a->nom],
@@ -57,7 +57,9 @@ class AgentsExport implements FromQuery, WithHeadings, WithMapping
             'date_nomination'  => ['label' => 'Date nomination', 'valeur' => fn (Agent $a) => $a->date_nomination?->format('d/m/Y')],
             'date_retraite'    => ['label' => 'Date retraite', 'valeur' => fn (Agent $a) => $a->date_retraite?->format('d/m/Y')],
 
-            'structure'        => ['label' => 'Structure', 'valeur' => fn (Agent $a) => $a->structure?->libelle],
+            'structure'        => ['label' => 'Structure (unité)', 'valeur' => fn (Agent $a) => $a->structure?->niveauStructure()],
+            'service'          => ['label' => 'Service', 'valeur' => fn (Agent $a) => $a->structure?->niveauService()],
+            'rattachement_complet' => ['label' => 'Rattachement (chemin complet)', 'valeur' => fn (Agent $a) => $a->structure?->cheminComplet()],
             'region'           => ['label' => 'Région', 'valeur' => fn (Agent $a) => $a->region],
             'province'         => ['label' => 'Province', 'valeur' => fn (Agent $a) => $a->province],
             'commune'          => ['label' => 'Commune', 'valeur' => fn (Agent $a) => $a->commune],
@@ -80,6 +82,18 @@ class AgentsExport implements FromQuery, WithHeadings, WithMapping
             'statut_dossier'   => ['label' => 'Statut dossier', 'valeur' => fn (Agent $a) => $a->statut_dossier?->label()],
             'observations'     => ['label' => 'Observations', 'valeur' => fn (Agent $a) => $a->observations],
         ];
+
+        // Niveaux de rattachement éclatés (Niveau 1 = racine … Niveau N = service).
+        $profondeur = \App\Models\Structure::profondeurMax();
+        for ($i = 1; $i <= $profondeur; $i++) {
+            $idx = $i - 1;
+            $colonnes["niveau_{$i}"] = [
+                'label'  => "Niveau {$i}",
+                'valeur' => fn (Agent $a) => $a->structure?->cheminNiveaux()[$idx] ?? null,
+            ];
+        }
+
+        return $colonnes;
     }
 
     /** Liste clé => libellé pour l'interface de sélection des colonnes. */
@@ -93,7 +107,8 @@ class AgentsExport implements FromQuery, WithHeadings, WithMapping
         return Agent::query()
             ->with([
                 'emploi', 'fonction', 'poste', 'categorie', 'echelle', 'classe', 'echelon',
-                'indice', 'positionAdministrative', 'structure', 'localite', 'typeEnseignement', 'specialite',
+                'indice', 'positionAdministrative', 'structure.parent.parent.parent.parent.parent',
+                'localite', 'typeEnseignement', 'specialite',
             ])
             ->recherche($this->filtres['q'] ?? null)
             ->region($this->filtres['region'] ?? null)

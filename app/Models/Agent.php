@@ -100,13 +100,23 @@ class Agent extends Model
     // --- Scopes ---
     public function scopeRecherche(Builder $query, ?string $terme): Builder
     {
-        if (! $terme) {
+        $terme = trim((string) $terme);
+        if ($terme === '') {
             return $query;
         }
-        return $query->where(function (Builder $q) use ($terme) {
-            $q->where('matricule', 'like', "%{$terme}%")
-              ->orWhere('nom', 'like', "%{$terme}%")
-              ->orWhere('prenoms', 'like', "%{$terme}%");
+
+        // Recherche multi-mots : chaque mot doit matcher matricule, nom OU prénoms.
+        // Ainsi « GADIAGA Soumaïla » (nom + prénom) retrouve bien l'agent.
+        $mots = preg_split('/\s+/', $terme) ?: [$terme];
+
+        return $query->where(function (Builder $q) use ($mots) {
+            foreach ($mots as $mot) {
+                $q->where(function (Builder $w) use ($mot) {
+                    $w->where('matricule', 'like', "%{$mot}%")
+                      ->orWhere('nom', 'like', "%{$mot}%")
+                      ->orWhere('prenoms', 'like', "%{$mot}%");
+                });
+            }
         });
     }
 

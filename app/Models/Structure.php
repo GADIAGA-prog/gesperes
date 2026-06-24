@@ -66,7 +66,8 @@ class Structure extends Model
         ];
     }
 
-    public function cheminComplet(): string
+    /** Libellés du chemin hiérarchique, de la racine jusqu'à cette structure. */
+    public function cheminNiveaux(): array
     {
         $segments = [];
         $node = $this;
@@ -76,6 +77,55 @@ class Structure extends Model
             $node = $node->parent;
             $guard++;
         }
-        return implode(' › ', $segments);
+        return $segments;
+    }
+
+    public function cheminComplet(): string
+    {
+        return implode(' › ', $this->cheminNiveaux());
+    }
+
+    /**
+     * Structure (unité) = avant-dernier niveau de la cascade.
+     * S'il n'y a pas de service (un seul niveau), le dernier niveau est la structure.
+     */
+    public function niveauStructure(): ?string
+    {
+        $n = $this->cheminNiveaux();
+        $c = count($n);
+        return $c >= 2 ? $n[$c - 2] : ($n[0] ?? null);
+    }
+
+    /** Service = dernier niveau de la cascade (null s'il n'y a qu'un seul niveau). */
+    public function niveauService(): ?string
+    {
+        $n = $this->cheminNiveaux();
+        return count($n) >= 2 ? end($n) : null;
+    }
+
+    /** Carte id => [libellés des niveaux] pour toutes les structures (une seule requête). */
+    public static function cheminsParId(): array
+    {
+        $all = static::get(['id', 'libelle', 'parent_id'])->keyBy('id');
+        $chemins = [];
+        foreach ($all as $id => $s) {
+            $niveaux = [];
+            $node = $s;
+            $guard = 0;
+            while ($node && $guard < 12) {
+                array_unshift($niveaux, $node->libelle);
+                $node = $node->parent_id ? ($all[$node->parent_id] ?? null) : null;
+                $guard++;
+            }
+            $chemins[$id] = $niveaux;
+        }
+        return $chemins;
+    }
+
+    /** Profondeur maximale de la hiérarchie (nombre de niveaux). */
+    public static function profondeurMax(): int
+    {
+        $longueurs = array_map('count', static::cheminsParId());
+        return $longueurs ? max($longueurs) : 1;
     }
 }

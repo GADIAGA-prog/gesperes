@@ -38,7 +38,7 @@ class AgentController extends Controller
         $this->authorize('agents.view');
 
         $agents = Agent::query()
-            ->with(['emploi', 'structure', 'positionAdministrative'])
+            ->with(['emploi', 'structure.parent.parent.parent.parent', 'positionAdministrative'])
             ->recherche($request->input('q'))
             ->region($request->input('region'))
             ->when($request->filled('statut_dossier'), fn ($query) =>

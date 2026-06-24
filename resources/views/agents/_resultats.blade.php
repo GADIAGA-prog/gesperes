@@ -8,7 +8,7 @@
                 <th class="table-head">Nom & prénoms</th>
                 <th class="table-head">Emploi</th>
                 <th class="table-head">Structure</th>
-                <th class="table-head">Région</th>
+                <th class="table-head">Service</th>
                 <th class="table-head">Dossier</th>
                 <th class="table-head text-right">Actions</th>
             </tr>
@@ -21,8 +21,8 @@
                         <a href="{{ route('agents.show', $agent) }}" class="font-medium text-institution-700 hover:underline">{{ $agent->nom_complet }}</a>
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600">{{ $agent->emploi?->libelle ?? '—' }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">{{ $agent->structure?->cheminComplet() ?? '—' }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">{{ $agent->region ?? '—' }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ $agent->structure?->niveauStructure() ?? '—' }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ $agent->structure?->niveauService() ?? '—' }}</td>
                     <td class="px-4 py-3">
                         <span class="badge {{ $agent->statut_dossier?->color() }}">{{ $agent->statut_dossier?->label() }}</span>
                     </td>

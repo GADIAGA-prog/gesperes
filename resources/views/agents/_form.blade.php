@@ -53,9 +53,9 @@
             'label' => "Structure d'affectation",
         ])
 
-        {{-- Établissement / Poste = Fonction (saisie dans l'onglet Carrière), affichée ici en lecture seule. --}}
+        {{-- Fonction (saisie dans l'onglet Carrière), affichée ici en lecture seule. --}}
         <div>
-            <label class="label">Établissement / Poste (Fonction)</label>
+            <label class="label">Fonction</label>
             <div id="affectation-fonction-mirror" class="input bg-gray-50 text-gray-600">{{ $a?->fonction?->libelle ?? '—' }}</div>
             <p class="mt-1 text-xs text-gray-400">Défini dans l'onglet Carrière → Fonction.</p>
         </div>
