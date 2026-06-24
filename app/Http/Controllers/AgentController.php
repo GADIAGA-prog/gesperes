@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\Sexe;
 use App\Enums\SituationMatrimoniale;
 use App\Enums\StatutDossier;
+use App\Exports\AgentsExport;
 use App\Http\Requests\StoreAgentRequest;
 use App\Http\Requests\UpdateAgentRequest;
 use App\Models\Agent;
@@ -53,6 +54,7 @@ class AgentController extends Controller
             'regions'  => $regions,
             'statuts'  => StatutDossier::cases(),
             'filtres'  => $request->only(['q', 'region', 'statut_dossier']),
+            'colonnesExport' => AgentsExport::colonnesDisponibles(),
         ];
 
         // Recherche en direct : on ne renvoie que le tableau de résultats (sans le layout).

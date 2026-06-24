@@ -4,6 +4,19 @@
     $logo = is_file(public_path('images/logo-pdf.png'))
         ? public_path('images/logo-pdf.png')
         : public_path('images/logo.png');
+
+    // Timbre : chaîne hiérarchique descendant jusqu'à la structure de l'utilisateur connecté
+    // (le ministère est déjà affiché en titre, on l'exclut de la chaîne).
+    $chaineStructure = [];
+    $noeud = auth()->user()?->structure;
+    $garde = 0;
+    while ($noeud && $garde < 12) {
+        if ($noeud->type !== \App\Enums\TypeStructure::MINISTERE) {
+            array_unshift($chaineStructure, mb_strtoupper($noeud->libelle));
+        }
+        $noeud = $noeud->parent;
+        $garde++;
+    }
 @endphp
 <table style="width:100%; border:none; margin-bottom:6px;">
     <tr>
@@ -13,7 +26,11 @@
             =========<br>
             SECRÉTARIAT GÉNÉRAL<br>
             =========
-            @if ($avecDrh)
+            @if (! empty($chaineStructure))
+                @foreach ($chaineStructure as $niveau)
+                    <br>{{ $niveau }}<br>=========
+                @endforeach
+            @elseif ($avecDrh)
                 <br>DIRECTION DES RESSOURCES HUMAINES<br>=========
             @endif
         </td>

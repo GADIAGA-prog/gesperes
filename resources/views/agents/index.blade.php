@@ -10,8 +10,33 @@
             <a href="{{ route('agents.import.form') }}" class="btn btn-secondary">Importer</a>
         @endcan
         @can('agents.export')
-            <a href="{{ route('agents.export') }}" x-bind:href="urlExport('{{ route('agents.export') }}')" class="btn btn-secondary">Exporter Excel</a>
-            <a href="{{ route('agents.export.pdf') }}" x-bind:href="urlExport('{{ route('agents.export.pdf') }}')" class="btn btn-secondary">Exporter PDF</a>
+            <div class="relative" x-data="{ ouvert: false }">
+                <button type="button" class="btn btn-secondary" @click="ouvert = ! ouvert">Exporter ▾</button>
+                <div x-show="ouvert" x-cloak @click.outside="ouvert = false"
+                     class="absolute right-0 z-30 mt-1 w-80 rounded-lg border border-gray-200 bg-white p-3 text-left shadow-lg">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-semibold text-gray-700">Colonnes à exporter</span>
+                        <span class="text-xs">
+                            <button type="button" class="text-institution-600 hover:underline" @click="colonnes = [...toutesColonnes]">Tout</button>
+                            <button type="button" class="text-gray-500 hover:underline ml-2" @click="colonnes = []">Aucune</button>
+                        </span>
+                    </div>
+                    <div class="max-h-60 overflow-y-auto grid grid-cols-1 gap-1 pr-1">
+                        @foreach ($colonnesExport as $cle => $label)
+                            <label class="flex items-center gap-2 text-sm text-gray-700">
+                                <input type="checkbox" value="{{ $cle }}" x-model="colonnes" class="rounded border-gray-300 text-institution-600">
+                                {{ $label }}
+                            </label>
+                        @endforeach
+                    </div>
+                    <p class="mt-2 text-xs text-gray-400" x-text="colonnes.length + ' colonne(s) sélectionnée(s)'"></p>
+                    <div class="mt-2 flex justify-end gap-2 border-t border-gray-100 pt-3">
+                        <a x-bind:href="urlExport('{{ route('agents.export.pdf') }}')" class="btn btn-secondary text-sm">PDF</a>
+                        <a x-bind:href="urlExportExcel('{{ route('agents.export') }}')"
+                           x-bind:class="! colonnes.length && 'pointer-events-none opacity-50'" class="btn btn-primary text-sm">Excel</a>
+                    </div>
+                </div>
+            </div>
         @endcan
         @can('agents.create')
             <a href="{{ route('agents.create') }}" class="btn btn-primary">+ Nouvel agent</a>
@@ -56,6 +81,10 @@ function agentsRecherche() {
         statut:  @json($filtres['statut_dossier'] ?? ''),
         chargement: false,
 
+        // Export : toutes les colonnes cochées par défaut.
+        toutesColonnes: @json(array_keys($colonnesExport ?? [])),
+        colonnes:       @json(array_keys($colonnesExport ?? [])),
+
         // Construit la chaîne de paramètres courante (sans page).
         params(page) {
             const p = new URLSearchParams();
@@ -69,6 +98,14 @@ function agentsRecherche() {
         // Liens d'export : reprennent les filtres en cours.
         urlExport(base) {
             const qs = this.params().toString();
+            return qs ? base + '?' + qs : base;
+        },
+
+        // Export Excel : filtres + colonnes choisies.
+        urlExportExcel(base) {
+            const p = this.params();
+            this.colonnes.forEach((c) => p.append('colonnes[]', c));
+            const qs = p.toString();
             return qs ? base + '?' + qs : base;
         },
 

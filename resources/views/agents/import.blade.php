@@ -4,10 +4,22 @@
 
 @section('content')
 <div class="card max-w-2xl">
-    <p class="text-sm text-gray-600 mb-4">
-        Téléversez un fichier Excel (.xlsx, .xls) ou CSV. La première ligne doit contenir les en-têtes :
-        <code class="text-xs bg-gray-100 px-1 rounded">matricule, cle, nom, prenoms, sexe, date_naissance, emploi, categorie, region, province, commune, etablissement, nombre_enfants, situation_matrimoniale</code>
-    </p>
+    <div class="rounded-lg border border-institution-100 bg-institution-50/50 p-4 mb-4">
+        <div class="flex items-center justify-between gap-3 mb-2">
+            <h3 class="text-sm font-semibold text-gray-700">Modèle à respecter</h3>
+            <a href="{{ route('agents.import.modele') }}" class="btn btn-secondary text-sm">⬇ Télécharger le modèle (.xlsx)</a>
+        </div>
+        <p class="text-sm text-gray-600">
+            Utilisez le modèle ci-dessus : la première ligne contient les en-têtes attendus (à ne pas modifier) :
+        </p>
+        <code class="block mt-2 text-xs bg-white border border-gray-200 px-2 py-1 rounded">{{ implode(', ', $colonnesModele) }}</code>
+        <ul class="mt-3 text-xs text-gray-500 list-disc list-inside space-y-1">
+            <li>Formats acceptés : <strong>.xlsx, .xls, .csv</strong> (max 5 Mo).</li>
+            <li>Le <strong>matricule</strong> est obligatoire et sert de clé : un matricule <strong>déjà existant</strong> (ou en double dans le fichier) est <strong>ignoré</strong>, jamais dupliqué.</li>
+            <li><strong>emploi</strong> et <strong>categorie</strong> sont reconnus par leur libellé / code exact (sinon laissés vides).</li>
+            <li><strong>sexe</strong> : M ou F ; <strong>date_naissance</strong> : JJ/MM/AAAA.</li>
+        </ul>
+    </div>
     <form method="POST" action="{{ route('agents.import') }}" enctype="multipart/form-data" class="space-y-4">
         @csrf
         <div>

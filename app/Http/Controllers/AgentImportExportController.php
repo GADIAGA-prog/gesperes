@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exports\AgentsExport;
+use App\Exports\ModeleImportAgents;
 use App\Imports\AgentsImport;
 use App\Models\Agent;
 use App\Services\AgentService;
@@ -21,7 +22,15 @@ class AgentImportExportController extends Controller
     public function form(): View
     {
         $this->authorize('agents.import');
-        return view('agents.import');
+        return view('agents.import', ['colonnesModele' => ModeleImportAgents::COLONNES]);
+    }
+
+    /** Modèle Excel vierge à respecter pour l'import. */
+    public function modele(): BinaryFileResponse
+    {
+        $this->authorize('agents.import');
+
+        return Excel::download(new ModeleImportAgents(), 'modele_import_agents.xlsx');
     }
 
     public function import(Request $request): RedirectResponse
@@ -36,6 +45,9 @@ class AgentImportExportController extends Controller
         Excel::import($import, $request->file('fichier'));
 
         $message = "{$import->importes} agent(s) importé(s).";
+        if ($import->ignores > 0) {
+            $message .= " {$import->ignores} doublon(s) ignoré(s).";
+        }
         if (! empty($import->erreurs)) {
             return redirect()->route('agents.index')
                 ->with('success', $message)
@@ -50,9 +62,10 @@ class AgentImportExportController extends Controller
         $this->authorize('agents.export');
 
         $filtres = $request->only(['q', 'region', 'statut_dossier']);
+        $colonnes = (array) $request->input('colonnes', []);
         $nom = 'agents_' . now()->format('Ymd_His') . '.xlsx';
 
-        return Excel::download(new AgentsExport($filtres), $nom);
+        return Excel::download(new AgentsExport($filtres, $colonnes), $nom);
     }
 
     /** Fiche individuelle d'un agent au format PDF. */

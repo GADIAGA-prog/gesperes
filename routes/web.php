@@ -66,6 +66,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
         /* Import / Export — routes statiques placées AVANT /{agent} pour ne pas être masquées */
         Route::get('/import',     [AgentImportExportController::class, 'form'])->name('import.form');
+        Route::get('/import/modele', [AgentImportExportController::class, 'modele'])->name('import.modele');
         Route::post('/import',    [AgentImportExportController::class, 'import'])->name('import');
         Route::get('/export',     [AgentImportExportController::class, 'export'])->name('export');
         Route::get('/export/pdf', [AgentImportExportController::class, 'exportPdfListe'])->name('export.pdf');

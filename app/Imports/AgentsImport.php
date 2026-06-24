@@ -22,7 +22,11 @@ use Maatwebsite\Excel\Concerns\WithHeadingRow;
 class AgentsImport implements ToCollection, WithHeadingRow
 {
     public int $importes = 0;
+    public int $ignores = 0;
     public array $erreurs = [];
+
+    /** Matricules déjà rencontrés dans le fichier courant (anti-doublon intra-fichier). */
+    private array $vus = [];
 
     public function __construct(
         private AgentService $service,
@@ -42,7 +46,18 @@ class AgentsImport implements ToCollection, WithHeadingRow
                 continue; // ligne vide
             }
 
+            // Anti-doublon intra-fichier (même matricule présent deux fois).
+            $cle = mb_strtoupper($matricule);
+            if (isset($this->vus[$cle])) {
+                $this->ignores++;
+                $this->erreurs[] = "Ligne {$ligne} : matricule {$matricule} en double dans le fichier, ignoré.";
+                continue;
+            }
+            $this->vus[$cle] = true;
+
+            // Anti-doublon en base.
             if (Agent::where('matricule', $matricule)->exists()) {
+                $this->ignores++;
                 $this->erreurs[] = "Ligne {$ligne} : matricule {$matricule} déjà existant, ignoré.";
                 continue;
             }
