@@ -77,23 +77,54 @@ class BudgetController extends Controller
     {
         $this->authorize('budget.view');
 
-        $agents = Agent::query()
-            ->with(['emploi', 'poste', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'indemnites.indemnite', 'structure.action'])
+        $mode = $request->input('mode') === 'structure' ? 'structure' : 'agent';
+
+        // Requête filtrée commune aux deux modes (closure : un builder neuf à chaque appel).
+        $base = fn () => Agent::query()
             ->when($request->filled('q'), fn ($q) => $q->recherche($request->input('q')))
             ->when($request->filled('emploi_id'), fn ($q) => $q->where('emploi_id', $request->input('emploi_id')))
             ->when($request->filled('categorie_id'), fn ($q) => $q->where('categorie_id', $request->input('categorie_id')))
-            ->when($request->filled('structure_id'), fn ($q) => $q->where('structure_id', $request->input('structure_id')))
-            ->orderBy('nom')->orderBy('prenoms')
-            ->paginate(50)
-            ->withQueryString();
+            ->when($request->filled('structure_id'), fn ($q) => $q->where('structure_id', $request->input('structure_id')));
 
-        // Ligne de paie calculée pour chaque agent de la page.
-        foreach ($agents as $agent) {
-            $agent->paie = $paie->ligne($agent);
+        $agents = null;
+        $synthese = null;
+
+        if ($mode === 'structure') {
+            // Agrégation des dépenses de personnel par structure d'affectation (cascade).
+            // Mémoire bornée (accumulateur par structure) ; calcul par lots pour tenir les gros effectifs.
+            $acc = [];
+            $base()->with(['indice', 'indemnites.indemnite', 'fonction', 'structure'])
+                ->chunk(500, function ($lot) use (&$acc, $paie) {
+                    foreach ($lot as $agent) {
+                        $p = $paie->ligne($agent);
+                        $sid = $agent->structure_id ?: 0;
+                        $acc[$sid] ??= ['structure' => $agent->structure, 'effectif' => 0, 'mois' => 0.0, 'annuel' => 0.0];
+                        $acc[$sid]['effectif']++;
+                        $acc[$sid]['mois']   += $p['total_mois'];
+                        $acc[$sid]['annuel'] += $p['total_annuel'];
+                    }
+                });
+
+            $synthese = collect($acc)
+                ->map(fn ($r) => $r + ['chemin' => $r['structure']?->cheminComplet() ?? 'Sans structure'])
+                ->sortBy('chemin')
+                ->values();
+        } else {
+            $agents = $base()
+                ->with(['emploi', 'poste', 'fonction', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'indemnites.indemnite', 'structure.action'])
+                ->orderBy('nom')->orderBy('prenoms')
+                ->paginate(50)
+                ->withQueryString();
+
+            foreach ($agents as $agent) {
+                $agent->paie = $paie->ligne($agent);
+            }
         }
 
         return view('budget.personnel', [
+            'mode'       => $mode,
             'agents'     => $agents,
+            'synthese'   => $synthese,
             'emplois'    => Emploi::orderBy('libelle')->pluck('libelle', 'id'),
             'categories' => Categorie::orderBy('code')->pluck('code', 'id'),
             'structures' => Structure::orderBy('libelle')->pluck('libelle', 'id'),
