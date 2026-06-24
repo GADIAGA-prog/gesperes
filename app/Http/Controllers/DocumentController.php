@@ -120,7 +120,8 @@ class DocumentController extends Controller
             }
             $prefixe = str_pad((string) ($i + 1), 2, '0', STR_PAD_LEFT) . '_' . $doc->type_document?->value;
             $extension = pathinfo($doc->nom_original, PATHINFO_EXTENSION) ?: 'pdf';
-            $zip->addFile(Storage::disk('documents')->path($doc->chemin), "{$prefixe}.{$extension}");
+            // addFromString (et non addFile/->path()) : compatible disque S3 où il n'existe pas de chemin local.
+            $zip->addFromString("{$prefixe}.{$extension}", Storage::disk('documents')->get($doc->chemin));
         }
         $zip->close();
 
