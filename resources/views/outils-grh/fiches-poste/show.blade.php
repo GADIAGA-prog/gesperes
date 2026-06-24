@@ -13,10 +13,45 @@
     <div class="flex gap-2">
         <a href="{{ route('fiches-poste.pdf', $fiche) }}" class="btn btn-secondary">Exporter PDF</a>
         @can('fiches-poste.manage')
-            <a href="{{ route('fiches-poste.edit', $fiche) }}" class="btn btn-primary">Modifier</a>
+            @if ($fiche->estModifiable())
+                <a href="{{ route('fiches-poste.edit', $fiche) }}" class="btn btn-primary">Modifier</a>
+            @endif
         @endcan
     </div>
 </div>
+
+{{-- Workflow de validation (guide §IV) --}}
+@can('fiches-poste.manage')
+<div class="card mb-6">
+    <div class="flex flex-wrap items-center gap-3">
+        <span class="text-sm text-gray-600">Workflow :</span>
+        <span class="badge {{ $fiche->statut?->color() }}">{{ $fiche->statut?->label() }}</span>
+        @if ($fiche->version)<span class="text-xs text-gray-400">version {{ $fiche->version }}</span>@endif
+        <div class="flex flex-wrap gap-2 ml-auto">
+            @if ($fiche->peutSoumettre())
+                <form method="POST" action="{{ route('fiches-poste.soumettre', $fiche) }}">@csrf
+                    <button type="submit" class="btn btn-secondary text-sm">Valider (supérieur immédiat)</button></form>
+            @endif
+            @if ($fiche->peutAdopter())
+                <form method="POST" action="{{ route('fiches-poste.adopter', $fiche) }}">@csrf
+                    <button type="submit" class="btn btn-primary text-sm">Adopter (DRH / comité)</button></form>
+            @endif
+            @if ($fiche->peutReviser())
+                <form method="POST" action="{{ route('fiches-poste.reviser', $fiche) }}"
+                      onsubmit="return confirm('Mettre cette fiche adoptée en révision (nouvelle version) ?')">@csrf
+                    <button type="submit" class="btn btn-secondary text-sm">Réviser</button></form>
+            @endif
+        </div>
+    </div>
+    @if ($fiche->validations->isNotEmpty())
+        <ul class="mt-3 border-t border-gray-100 pt-3 space-y-1 text-xs text-gray-500">
+            @foreach ($fiche->validations as $v)
+                <li>{{ $v->created_at?->format('d/m/Y H:i') }} — {{ $v->etapeLabel() }}@if($v->user) par {{ $v->user->name }}@endif @if($v->version)<span class="text-gray-400">(v{{ $v->version }})</span>@endif</li>
+            @endforeach
+        </ul>
+    @endif
+</div>
+@endcan
 
 @php
     $typesComp = \App\Enums\TypeCompetence::cases();
@@ -113,6 +148,17 @@
             </ul>
         </div>
     </div>
+</div>
+
+<div class="card mt-6">
+    <h3 class="font-semibold text-gray-700 mb-2">Titulaires ({{ $fiche->titulaires->count() }})</h3>
+    @forelse ($fiche->titulaires as $t)
+        <a href="{{ route('agents.show', $t) }}" class="block py-1 text-sm text-institution-700 hover:underline">
+            {{ $t->matricule }} — {{ $t->nom_complet }}
+        </a>
+    @empty
+        <p class="text-sm text-gray-400">Aucun agent rattaché à cette fiche. Le rattachement se fait depuis l'onglet Affectation de l'agent.</p>
+    @endforelse
 </div>
 
 <div class="mt-6"><a href="{{ route('fiches-poste.index') }}" class="text-sm text-gray-500 hover:underline">← Retour à la liste</a></div>

@@ -62,8 +62,11 @@
 
         <x-form.input name="date_affectation" label="Date d'affectation" type="date" :value="$a?->date_affectation?->toDateString()" />
 
+        <x-form.select name="fiche_poste_id" label="Fiche de poste (titulaire)" :options="$fichesPoste" :selected="$a?->fiche_poste_id" placeholder="— Aucune —" />
+
         <p class="text-xs text-gray-400 sm:col-span-2 lg:col-span-3">
             La région, la province et la commune sont déduites automatiquement de la structure d'affectation choisie.
+            La fiche de poste liste les postes <strong>adoptés</strong> (Outils GRH → Fiches de poste).
         </p>
     </div>
 

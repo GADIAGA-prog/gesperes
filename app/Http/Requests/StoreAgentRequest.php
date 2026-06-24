@@ -35,6 +35,7 @@ class StoreAgentRequest extends FormRequest
             'emploi_id' => ['nullable', 'exists:emplois,id'],
             'fonction_id' => ['nullable', 'exists:fonctions,id'],
             'poste_id' => ['nullable', 'exists:postes,id'],
+            'fiche_poste_id' => ['nullable', 'exists:fiches_poste,id'],
             'categorie_id' => ['nullable', 'exists:categories,id'],
             'echelle_id' => ['nullable', 'exists:echelles,id'],
             'classe_id' => ['nullable', 'exists:classes,id'],

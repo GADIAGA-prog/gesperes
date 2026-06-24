@@ -51,4 +51,13 @@ class FichePoste extends Model
         return $this->belongsToMany(Competence::class, 'fiche_poste_competence')
             ->withPivot(['type', 'niveau'])->withTimestamps();
     }
+
+    public function validations() { return $this->hasMany(FichePosteValidation::class)->orderByDesc('id'); }
+    public function titulaires() { return $this->hasMany(Agent::class); }
+
+    // --- Garde-fous du workflow (guide §IV) ---
+    public function peutSoumettre(): bool { return $this->statut === StatutFichePoste::BROUILLON; }
+    public function peutAdopter(): bool { return $this->statut === StatutFichePoste::VALIDEE_SUPERIEUR; }
+    public function peutReviser(): bool { return $this->statut === StatutFichePoste::ADOPTEE; }
+    public function estModifiable(): bool { return $this->statut !== StatutFichePoste::ADOPTEE; }
 }

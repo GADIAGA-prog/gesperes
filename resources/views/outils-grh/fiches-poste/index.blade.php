@@ -7,9 +7,12 @@
 
 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
     <p class="text-sm text-gray-500">{{ $fiches->total() }} fiche(s) de poste</p>
-    @can('fiches-poste.manage')
-        <a href="{{ route('fiches-poste.create') }}" class="btn btn-primary">+ Nouvelle fiche de poste</a>
-    @endcan
+    <div class="flex gap-2">
+        <a href="{{ route('fiches-poste.cartographie') }}" class="btn btn-secondary">Cartographie par structure</a>
+        @can('fiches-poste.manage')
+            <a href="{{ route('fiches-poste.create') }}" class="btn btn-primary">+ Nouvelle fiche de poste</a>
+        @endcan
+    </div>
 </div>
 
 <form method="GET" class="card mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">

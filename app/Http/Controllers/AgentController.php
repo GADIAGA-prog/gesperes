@@ -143,6 +143,10 @@ class AgentController extends Controller
             'indices'     => $indices->pluck('valeur', 'id'),
             'positions'   => PositionAdministrative::orderBy('libelle')->pluck('libelle', 'id'),
             'structures'  => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            // Fiches de poste adoptées, rattachables à l'agent (titulaire).
+            'fichesPoste' => \App\Models\FichePoste::where('statut', \App\Enums\StatutFichePoste::ADOPTEE->value)
+                ->orderBy('intitule')->get()
+                ->mapWithKeys(fn ($f) => [$f->id => ($f->code ? $f->code . ' — ' : '') . $f->intitule]),
             // Cascade hiérarchique des structures (JS) : enfants par parent + carte des parents.
             'structuresCascade' => [
                 'enfants' => $structuresArbre

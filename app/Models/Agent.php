@@ -19,7 +19,7 @@ class Agent extends Model
     protected $fillable = [
         'matricule', 'cle', 'nom', 'prenoms', 'sexe', 'date_naissance',
         'nationalite', 'telephone', 'email', 'adresse',
-        'statut', 'emploi_id', 'fonction_id', 'poste_id', 'categorie_id',
+        'statut', 'emploi_id', 'fonction_id', 'poste_id', 'fiche_poste_id', 'categorie_id',
         'echelle_id', 'classe_id', 'echelon_id', 'indice_id', 'position_administrative_id',
         'structure_id', 'region_id', 'province_id', 'region', 'province', 'commune', 'etablissement', 'localite_id', 'date_affectation',
         'date_integration', 'date_effet_emploi', 'date_nomination', 'date_retraite',
@@ -51,6 +51,7 @@ class Agent extends Model
     public function emploi() { return $this->belongsTo(Emploi::class); }
     public function fonction() { return $this->belongsTo(Fonction::class); }
     public function poste() { return $this->belongsTo(Poste::class); }
+    public function fichePoste() { return $this->belongsTo(FichePoste::class); }
     public function categorie() { return $this->belongsTo(Categorie::class); }
     public function echelle() { return $this->belongsTo(Echelle::class); }
     public function classe() { return $this->belongsTo(Classe::class); }

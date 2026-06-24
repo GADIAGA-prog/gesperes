@@ -291,12 +291,17 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('outils-grh/fiches-poste')->name('fiches-poste.')->group(function () {
         Route::get('/',                 [FichePosteController::class, 'index'])->name('index');
         Route::get('/creer',            [FichePosteController::class, 'create'])->name('create');
+        Route::get('/cartographie',     [FichePosteController::class, 'cartographie'])->name('cartographie');
         Route::post('/',                [FichePosteController::class, 'store'])->name('store');
         Route::get('/{fichePoste}',     [FichePosteController::class, 'show'])->name('show');
         Route::get('/{fichePoste}/pdf', [FichePosteController::class, 'pdf'])->name('pdf');
         Route::get('/{fichePoste}/modifier', [FichePosteController::class, 'edit'])->name('edit');
         Route::put('/{fichePoste}',     [FichePosteController::class, 'update'])->name('update');
         Route::delete('/{fichePoste}',  [FichePosteController::class, 'destroy'])->name('destroy');
+        // Workflow de validation (guide §IV)
+        Route::post('/{fichePoste}/soumettre', [FichePosteController::class, 'soumettre'])->name('soumettre');
+        Route::post('/{fichePoste}/adopter',   [FichePosteController::class, 'adopter'])->name('adopter');
+        Route::post('/{fichePoste}/reviser',   [FichePosteController::class, 'reviser'])->name('reviser');
     });
 
     Route::prefix('outils-grh')->name('outils-grh.')->group(function () {

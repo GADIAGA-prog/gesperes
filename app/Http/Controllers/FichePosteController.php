@@ -18,13 +18,17 @@ use App\Models\FamilleProfessionnelle;
 use App\Models\FichePoste;
 use App\Models\Structure;
 use App\Services\FichePosteCodeService;
+use App\Services\FichePosteWorkflowService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class FichePosteController extends Controller
 {
-    public function __construct(private FichePosteCodeService $codeService) {}
+    public function __construct(
+        private FichePosteCodeService $codeService,
+        private FichePosteWorkflowService $workflow,
+    ) {}
 
     public function index(Request $request): View
     {
@@ -77,9 +81,68 @@ class FichePosteController extends Controller
         $fichePoste->load([
             'familleProfessionnelle', 'emploiType', 'emploi', 'categorie', 'structure',
             'activites', 'indicateurs', 'competences', 'createur',
+            'validations.user', 'titulaires',
         ]);
 
         return view('outils-grh.fiches-poste.show', ['fiche' => $fichePoste]);
+    }
+
+    // ===== Workflow (guide §IV) =====
+
+    public function soumettre(FichePoste $fichePoste): RedirectResponse
+    {
+        $this->authorize('fiches-poste.manage');
+        if (! $fichePoste->peutSoumettre()) {
+            return back()->with('error', "Seule une fiche en brouillon peut être validée par le supérieur.");
+        }
+        $this->workflow->soumettre($fichePoste, request()->user()->id);
+
+        return back()->with('success', 'Fiche validée par le supérieur immédiat.');
+    }
+
+    public function adopter(FichePoste $fichePoste): RedirectResponse
+    {
+        $this->authorize('fiches-poste.manage');
+        if (! $fichePoste->peutAdopter()) {
+            return back()->with('error', "La fiche doit d'abord être validée par le supérieur immédiat.");
+        }
+        $this->workflow->adopter($fichePoste, request()->user()->id);
+
+        return back()->with('success', 'Fiche de poste adoptée.');
+    }
+
+    public function reviser(FichePoste $fichePoste): RedirectResponse
+    {
+        $this->authorize('fiches-poste.manage');
+        if (! $fichePoste->peutReviser()) {
+            return back()->with('error', "Seule une fiche adoptée peut être mise en révision.");
+        }
+        $this->workflow->reviser($fichePoste, request()->user()->id);
+
+        return back()->with('success', 'Fiche remise en révision (nouvelle version).');
+    }
+
+    /** Cartographie : répertoire des postes regroupés par structure (guide §V). */
+    public function cartographie(Request $request): View
+    {
+        $this->authorize('fiches-poste.view');
+
+        $fiches = FichePoste::with(['structure', 'emploi', 'familleProfessionnelle', 'emploiType'])
+            ->withCount('titulaires')
+            ->when($request->filled('structure_id'), fn ($q) => $q->where('structure_id', $request->input('structure_id')))
+            ->orderBy('intitule')
+            ->get();
+
+        $groupes = $fiches
+            ->groupBy(fn ($f) => $f->structure?->cheminComplet() ?? 'Sans structure')
+            ->sortKeys();
+
+        return view('outils-grh.fiches-poste.cartographie', [
+            'groupes'    => $groupes,
+            'total'      => $fiches->count(),
+            'structures' => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            'filtres'    => $request->only('structure_id'),
+        ]);
     }
 
     public function edit(FichePoste $fichePoste): View
