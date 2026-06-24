@@ -60,16 +60,36 @@ class AgentService
         // R9 : allocation familiale calculée selon le nombre d'enfants
         $data['allocation_familiale'] = $this->allocation->calculer((int) ($data['nombre_enfants'] ?? 0));
 
-        // Affectation géographique : on conserve les libellés texte (export, PDF, filtres,
-        // import Excel) en les synchronisant depuis les clés étrangères quand elles sont fournies.
-        if (! empty($data['region_id'])) {
-            $data['region'] = \App\Models\Region::find($data['region_id'])?->libelle;
-        }
-        if (! empty($data['province_id'])) {
-            $data['province'] = \App\Models\Province::find($data['province_id'])?->libelle;
-        }
-        if (! empty($data['localite_id'])) {
-            $data['commune'] = \App\Models\Localite::find($data['localite_id'])?->libelle;
+        // Affectation géographique : déduite de la structure d'affectation choisie
+        // (région/province/commune ne sont plus saisies directement dans le formulaire agent).
+        // On n'écrase pas une valeur existante lorsque la structure ne renseigne pas le niveau.
+        if (! empty($data['structure_id'])) {
+            $structure = \App\Models\Structure::with('localite')->find($data['structure_id']);
+            if ($structure) {
+                if ($structure->region_id) {
+                    $data['region_id'] = $structure->region_id;
+                    $data['region']    = $structure->region;
+                }
+                if ($structure->province_id) {
+                    $data['province_id'] = $structure->province_id;
+                    $data['province']    = $structure->province;
+                }
+                if ($structure->localite_id) {
+                    $data['localite_id'] = $structure->localite_id;
+                    $data['commune']     = $structure->localite?->libelle;
+                }
+            }
+        } else {
+            // Import Excel (texte) : on resynchronise depuis les FK si fournies.
+            if (! empty($data['region_id'])) {
+                $data['region'] = \App\Models\Region::find($data['region_id'])?->libelle;
+            }
+            if (! empty($data['province_id'])) {
+                $data['province'] = \App\Models\Province::find($data['province_id'])?->libelle;
+            }
+            if (! empty($data['localite_id'])) {
+                $data['commune'] = \App\Models\Localite::find($data['localite_id'])?->libelle;
+            }
         }
 
         return $data;

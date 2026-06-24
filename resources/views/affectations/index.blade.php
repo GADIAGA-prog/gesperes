@@ -22,8 +22,8 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-4 py-3 text-sm">{{ $aff->date_effet?->format('d/m/Y') }}</td>
                     <td class="px-4 py-3 text-sm font-medium">{{ $aff->agent?->nom_complet }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">{{ $aff->ancienneStructure?->libelle ?: '—' }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">{{ $aff->nouvelleStructure?->libelle ?: '—' }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ $aff->ancienneStructure?->cheminComplet() ?: '—' }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ $aff->nouvelleStructure?->cheminComplet() ?: '—' }}</td>
                     <td class="px-4 py-3 text-sm text-gray-500">{{ $aff->reference_acte ?: '—' }}</td>
                     <td class="px-4 py-3 text-right"><a href="{{ route('affectations.show', $aff) }}" class="text-sm text-institution-600 hover:underline">Détail</a></td>
                 </tr>

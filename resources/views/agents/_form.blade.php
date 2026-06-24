@@ -45,62 +45,25 @@
 
     {{-- Affectation --}}
     <div x-show="tab === 'affectation'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {{-- Structure : cascade hiérarchique (parent → … → service/poste).
-             La structure feuille sélectionnée (le service = le poste réel) devient structure_id. --}}
-        <div class="sm:col-span-2 lg:col-span-3" data-cascade-structure
-             x-data="cascadeStructure(@js($structuresCascade), @js((string) old('structure_id', $a?->structure_id)))">
-            <label class="label">Structure d'affectation
-                <span class="font-normal text-xs text-gray-400">— descendez jusqu'au service / poste</span>
-            </label>
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mt-1">
-                <template x-for="niv in niveaux" :key="niv.index">
-                    <select class="input" @change="choisir(niv.index, $event.target.value)">
-                        <option value="">— Choisir —</option>
-                        <template x-for="opt in niv.options" :key="opt.id">
-                            <option :value="opt.id" :selected="String(opt.id) === String(niv.valeur)"
-                                    x-text="opt.feuille ? opt.libelle : (opt.libelle + ' ›')"></option>
-                        </template>
-                    </select>
-                </template>
-            </div>
-            <input type="hidden" name="structure_id" :value="structureId">
-            @error('structure_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+        {{-- Structure : cascade hiérarchique (parent → … → service/poste). --}}
+        @include('partials.cascade-structure', [
+            'nom' => 'structure_id',
+            'config' => $structuresCascade,
+            'selected' => old('structure_id', $a?->structure_id),
+            'label' => "Structure d'affectation",
+        ])
+
+        {{-- Établissement / Poste = Fonction (saisie dans l'onglet Carrière), affichée ici en lecture seule. --}}
+        <div>
+            <label class="label">Établissement / Poste (Fonction)</label>
+            <div id="affectation-fonction-mirror" class="input bg-gray-50 text-gray-600">{{ $a?->fonction?->libelle ?? '—' }}</div>
+            <p class="mt-1 text-xs text-gray-400">Défini dans l'onglet Carrière → Fonction.</p>
         </div>
 
-        <x-form.select name="region_id" label="Région" :options="$regions" :selected="$a?->region_id" />
-
-        {{-- Province/Circonscription & Commune : options injectées en cascade par JS --}}
-        <div>
-            <label for="province_id" class="label">Province / Circonscription</label>
-            <select name="province_id" id="province_id" class="input" data-selected="{{ old('province_id', $a?->province_id) }}">
-                <option value="">—</option>
-            </select>
-            @error('province_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-        </div>
-        <div>
-            <label for="localite_id" class="label">Commune</label>
-            <select name="localite_id" id="localite_id" class="input" data-selected="{{ old('localite_id', $a?->localite_id) }}">
-                <option value="">—</option>
-            </select>
-            @error('localite_id')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-        </div>
-
-        {{-- Établissement / Poste : liste déroulante des établissements (saisie libre possible
-             pour un service/poste). Le lien hiérarchique établissement ↔ structure vit dans le module Structure. --}}
-        <div>
-            <label for="etablissement" class="label">Établissement / Poste</label>
-            <input type="text" name="etablissement" id="etablissement" list="liste-etablissements" class="input"
-                   value="{{ old('etablissement', $a?->etablissement) }}" placeholder="Sélectionner un établissement ou saisir un poste…">
-            <datalist id="liste-etablissements">
-                @foreach ($etablissements ?? [] as $etab)
-                    <option value="{{ $etab }}"></option>
-                @endforeach
-            </datalist>
-            @error('etablissement')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
-        </div>
         <x-form.input name="date_affectation" label="Date d'affectation" type="date" :value="$a?->date_affectation?->toDateString()" />
+
         <p class="text-xs text-gray-400 sm:col-span-2 lg:col-span-3">
-            Sélectionnez la région : la province (ou la circonscription d'éducation pour Kadiogo et Guiriko) puis la commune se filtrent automatiquement.
+            La région, la province et la commune sont déduites automatiquement de la structure d'affectation choisie.
         </p>
     </div>
 
@@ -205,96 +168,15 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // --- Cascade géographique : Région → Province/Circonscription → Commune ---
-    const provincesParRegion   = @json($provincesParRegion);
-    const localitesParProvince = @json($localitesParProvince);
-
-    const regionSel   = document.getElementById('region_id');
-    const provinceSel = document.getElementById('province_id');
-    const localiteSel = document.getElementById('localite_id');
-    const tsProvince  = window.agentSelects['province_id'];
-    const tsLocalite  = window.agentSelects['localite_id'];
-    const tsRegion    = window.agentSelects['region_id'];
-    if (! regionSel || ! tsProvince || ! tsLocalite) return;
-
-    const escapeHtml = (s) => String(s).replace(/[&<>"']/g, (c) =>
-        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-
-    function remplir(selectEl, ts, items, valeur) {
-        let html = '<option value="">—</option>';
-        items.forEach((it) => {
-            const attr = String(it.id) === String(valeur) ? ' selected' : '';
-            html += '<option value="' + it.id + '"' + attr + '>' + escapeHtml(it.libelle) + '</option>';
-        });
-        selectEl.innerHTML = html;
-        ts.sync(); // Tom Select relit les options et la valeur depuis le <select>
+    // --- Établissement/Poste = Fonction : miroir en lecture seule, synchronisé depuis l'onglet Carrière ---
+    const fonctionLabels = @json($fonctions);
+    const fonctionSel = document.getElementById('fonction_id');
+    const fonctionMirror = document.getElementById('affectation-fonction-mirror');
+    const tsFonction = window.agentSelects['fonction_id'];
+    if (fonctionSel && fonctionMirror) {
+        const majFonction = () => { fonctionMirror.textContent = fonctionLabels[fonctionSel.value] || '—'; };
+        if (tsFonction) { tsFonction.on('change', majFonction); } else { fonctionSel.addEventListener('change', majFonction); }
     }
-
-    const majProvinces = (valeur) => remplir(provinceSel, tsProvince, provincesParRegion[regionSel.value] || [], valeur);
-    const majCommunes  = (valeur) => remplir(localiteSel, tsLocalite, localitesParProvince[provinceSel.value] || [], valeur);
-
-    // Initialisation (édition ou repopulation après erreur de validation).
-    majProvinces(provinceSel.dataset.selected || '');
-    majCommunes(localiteSel.dataset.selected || '');
-
-    tsRegion.on('change', function () { majProvinces(''); majCommunes(''); });
-    tsProvince.on('change', function () { majCommunes(''); });
 });
-</script>
-@endpush
-
-@push('scripts')
-<script>
-// Cascade hiérarchique des structures : on descend parent → … → service/poste.
-// La structure feuille choisie devient structure_id (champ caché).
-function cascadeStructure(config, valeurActuelle) {
-    return {
-        enfants: config.enfants || {},
-        parents: config.parents || {},
-        selection: [],
-
-        init() {
-            // Reconstitue le chemin racine → structure courante en remontant les parents.
-            this.selection = this.cheminVers(valeurActuelle);
-        },
-
-        cheminVers(id) {
-            const chemin = [];
-            let courant = id ? String(id) : '';
-            let garde = 0;
-            while (courant && this.parents[courant] !== undefined && garde < 12) {
-                chemin.unshift(courant);
-                const parent = this.parents[courant];
-                courant = parent ? String(parent) : '';
-                garde++;
-            }
-            return chemin;
-        },
-
-        get niveaux() {
-            const niv = [];
-            let parent = 'racine';
-            for (let i = 0; ; i++) {
-                const options = this.enfants[parent] || [];
-                if (! options.length) break;          // plus d'enfants → on arrête la cascade
-                const valeur = this.selection[i] || '';
-                niv.push({ index: i, options, valeur });
-                if (! valeur) break;                  // niveau pas encore choisi
-                parent = String(valeur);
-            }
-            return niv;
-        },
-
-        choisir(index, valeur) {
-            this.selection = this.selection.slice(0, index);
-            if (valeur) this.selection[index] = String(valeur);
-        },
-
-        get structureId() {
-            const choisis = this.selection.filter(Boolean);
-            return choisis.length ? choisis[choisis.length - 1] : '';
-        },
-    };
-}
 </script>
 @endpush

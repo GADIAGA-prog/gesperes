@@ -7,6 +7,7 @@ use App\Models\Affectation;
 use App\Models\Agent;
 use App\Models\Fonction;
 use App\Models\Structure;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
@@ -30,8 +31,21 @@ class AffectationController extends Controller
 
         return view('affectations.create', [
             'agents'     => Agent::orderBy('nom')->get(['id', 'matricule', 'nom', 'prenoms']),
-            'structures' => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            'cascade'    => Structure::cascadeConfig(),
             'fonctions'  => Fonction::orderBy('libelle')->pluck('libelle', 'id'),
+        ]);
+    }
+
+    /** Situation actuelle d'un agent (ancienne affectation) pour le formulaire d'affectation. */
+    public function situationAgent(Agent $agent): JsonResponse
+    {
+        $this->authorize('affectations.create');
+        $agent->load(['structure', 'fonction']);
+
+        return response()->json([
+            'structure'        => $agent->structure?->cheminComplet(),
+            'fonction'         => $agent->fonction?->libelle,
+            'date_affectation' => $agent->date_affectation?->format('d/m/Y'),
         ]);
     }
 

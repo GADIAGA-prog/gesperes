@@ -21,7 +21,7 @@
                         <a href="{{ route('agents.show', $agent) }}" class="font-medium text-institution-700 hover:underline">{{ $agent->nom_complet }}</a>
                     </td>
                     <td class="px-4 py-3 text-sm text-gray-600">{{ $agent->emploi?->libelle ?? '—' }}</td>
-                    <td class="px-4 py-3 text-sm text-gray-600">{{ $agent->structure?->libelle ?? '—' }}</td>
+                    <td class="px-4 py-3 text-sm text-gray-600">{{ $agent->structure?->cheminComplet() ?? '—' }}</td>
                     <td class="px-4 py-3 text-sm text-gray-600">{{ $agent->region ?? '—' }}</td>
                     <td class="px-4 py-3">
                         <span class="badge {{ $agent->statut_dossier?->color() }}">{{ $agent->statut_dossier?->label() }}</span>

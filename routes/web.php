@@ -126,6 +126,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::prefix('affectations')->name('affectations.')->group(function () {
         Route::get('/',                     [AffectationController::class, 'index'])->name('index');
         Route::get('/creer',                [AffectationController::class, 'create'])->name('create');
+        Route::get('/agent/{agent}/situation', [AffectationController::class, 'situationAgent'])->name('situation');
         Route::post('/',                    [AffectationController::class, 'store'])->name('store');
         Route::get('/{affectation}',        [AffectationController::class, 'show'])->name('show');
     });

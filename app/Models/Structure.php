@@ -44,6 +44,28 @@ class Structure extends Model
     public function agents() { return $this->hasMany(Agent::class); }
     public function activites() { return $this->hasMany(Activite::class); }
 
+    /**
+     * Configuration de la cascade hiérarchique pour le JS (Alpine) :
+     *  - enfants : [parentKey => [{id, libelle, feuille}]]  (parentKey = 'racine' pour les racines)
+     *  - parents : [id => parent_id]  (pour reconstituer le chemin en édition)
+     */
+    public static function cascadeConfig(): array
+    {
+        $arbre = static::orderBy('libelle')->get(['id', 'libelle', 'parent_id']);
+        $parentsAvecEnfants = $arbre->pluck('parent_id')->filter()->unique()->flip();
+
+        return [
+            'enfants' => $arbre
+                ->groupBy(fn ($s) => $s->parent_id ? (string) $s->parent_id : 'racine')
+                ->map(fn ($grp) => $grp->map(fn ($s) => [
+                    'id' => $s->id,
+                    'libelle' => $s->libelle,
+                    'feuille' => ! $parentsAvecEnfants->has($s->id),
+                ])->values()),
+            'parents' => $arbre->mapWithKeys(fn ($s) => [$s->id => $s->parent_id]),
+        ];
+    }
+
     public function cheminComplet(): string
     {
         $segments = [];
