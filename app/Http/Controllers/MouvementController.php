@@ -8,6 +8,8 @@ use App\Models\Agent;
 use App\Models\Mouvement;
 use App\Models\PositionAdministrative;
 use App\Services\MouvementService;
+use App\Support\TableFiltre;
+use App\Support\TableTri;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -20,16 +22,27 @@ class MouvementController extends Controller
     {
         $this->authorize('mouvements.view');
 
-        $mouvements = Mouvement::with(['agent', 'anciennePosition', 'nouvellePosition'])
+        $query = Mouvement::with(['agent', 'anciennePosition', 'nouvellePosition'])
             ->when($request->filled('agent_id'), fn ($q) => $q->where('agent_id', $request->input('agent_id')))
             // Recherche multicritère par agent (matricule, nom, prénoms, emploi, structure).
             ->when($request->filled('q'), fn ($q) => $q->whereHas('agent',
                 fn ($a) => $a->recherche($request->input('q'))))
             ->when($request->filled('famille'), fn ($q) => $q->whereHas('nouvellePosition',
-                fn ($p) => $p->where('categorie', $request->input('famille'))))
-            ->latest('date_effet')
-            ->paginate(20)
-            ->withQueryString();
+                fn ($p) => $p->where('categorie', $request->input('famille'))));
+
+        // Filtre par colonne + tri par en-tête (serveur).
+        TableFiltre::appliquer($query, $request, [
+            'reference' => 'reference_acte',
+        ]);
+        TableTri::appliquer($query, $request, [
+            'date_effet' => 'date_effet',
+            'date_fin'   => 'date_fin',
+            'reference'  => 'reference_acte',
+            'agent'      => fn ($q, $sens) => $q->orderBy(
+                Agent::select('nom')->whereColumn('agents.id', 'mouvements.agent_id'), $sens),
+        ], 'date_effet', 'desc');
+
+        $mouvements = $query->paginate(20)->withQueryString();
 
         return view('mouvements.index', [
             'mouvements' => $mouvements,
