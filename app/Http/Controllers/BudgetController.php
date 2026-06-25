@@ -14,6 +14,8 @@ use App\Models\Structure;
 use App\Services\PaiePersonnelService;
 use App\Services\VentilationService;
 use App\Support\BudgetControle;
+use App\Support\TableFiltre;
+use App\Support\TableTri;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -118,11 +120,27 @@ class BudgetController extends Controller
 
             $synthese = collect($acc)->sortBy('libelle')->values();
         } else {
-            $agents = $base()
-                ->with(['emploi', 'poste', 'fonction', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'indemnites.indemnite', 'structure.action'])
-                ->orderBy('nom')->orderBy('prenoms')
-                ->paginate(50)
-                ->withQueryString();
+            $query = $base()
+                ->with(['emploi', 'poste', 'fonction', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'indemnites.indemnite', 'structure.action']);
+
+            // Filtre par colonne + tri par en-tête (sur les colonnes stockées en base ;
+            // les montants de paie sont calculés en PHP et ne sont pas triables côté serveur).
+            TableFiltre::appliquer($query, $request, [
+                'matricule' => 'matricule',
+                'nom'       => 'nom',
+                'prenoms'   => 'prenoms',
+                'emploi'    => fn ($q, $v) => $q->whereHas('emploi', fn ($e) => $e->where('libelle', 'like', "%{$v}%")),
+            ]);
+            TableTri::appliquer($query, $request, [
+                'matricule' => 'matricule',
+                'nom'       => 'nom',
+                'prenoms'   => 'prenoms',
+                'sexe'      => 'sexe',
+                'emploi'    => fn ($q, $s) => $q->orderBy(Emploi::select('libelle')->whereColumn('emplois.id', 'agents.emploi_id'), $s),
+            ], 'nom', 'asc');
+            $query->orderBy('prenoms');
+
+            $agents = $query->paginate(50)->withQueryString();
 
             foreach ($agents as $agent) {
                 $agent->paie = $paie->ligne($agent);

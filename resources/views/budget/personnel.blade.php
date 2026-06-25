@@ -7,8 +7,10 @@
 @section('content')
 @include('budget._tabs')
 
-<form method="GET" class="card mb-4 grid grid-cols-1 sm:grid-cols-5 gap-3">
+<form method="GET" id="filtres-personnel" class="card mb-4 grid grid-cols-1 sm:grid-cols-5 gap-3">
     <input type="hidden" name="mode" value="{{ $mode }}">
+    <input type="hidden" name="tri" value="{{ request('tri') }}">
+    <input type="hidden" name="sens" value="{{ request('sens') }}">
     <input type="text" name="q" value="{{ $filtres['q'] ?? '' }}" placeholder="Matricule, nom, prénoms, emploi, structure…" class="input">
     <select name="structure_id" class="input">
         <option value="">Toutes les structures</option>
@@ -88,11 +90,11 @@
             <thead>
                 <tr class="text-left uppercase tracking-wide text-gray-500 border-b border-gray-200">
                     <th class="table-head">N°</th>
-                    <th class="table-head">Mle</th>
-                    <th class="table-head">Nom</th>
-                    <th class="table-head">Prénoms</th>
-                    <th class="table-head">Sexe</th>
-                    <th class="table-head">Emploi</th>
+                    <x-tri.entete cle="matricule">Mle</x-tri.entete>
+                    <x-tri.entete cle="nom">Nom</x-tri.entete>
+                    <x-tri.entete cle="prenoms">Prénoms</x-tri.entete>
+                    <x-tri.entete cle="sexe">Sexe</x-tri.entete>
+                    <x-tri.entete cle="emploi">Emploi</x-tri.entete>
                     <th class="table-head">Fonction</th>
                     <th class="table-head">Rattachement (cascade)</th>
                     <th class="table-head">Action</th>
@@ -110,6 +112,16 @@
                     <th class="table-head text-right">CARFO</th>
                     <th class="table-head text-right">Total/mois</th>
                     <th class="table-head text-right">Total annuel</th>
+                </tr>
+                {{-- Ligne de filtres par colonne (rattachée au formulaire de filtres ci-dessus). --}}
+                <tr class="bg-gray-50/70">
+                    <th class="px-2 py-1"></th>
+                    <x-tri.filtre cle="matricule" form="filtres-personnel" placeholder="Mle…" />
+                    <x-tri.filtre cle="nom" form="filtres-personnel" placeholder="Nom…" />
+                    <x-tri.filtre cle="prenoms" form="filtres-personnel" placeholder="Prénoms…" />
+                    <th class="px-2 py-1"></th>
+                    <x-tri.filtre cle="emploi" form="filtres-personnel" placeholder="Emploi…" />
+                    <th class="px-2 py-1" colspan="17"></th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-100">

@@ -14,6 +14,8 @@ use App\Models\Fonction;
 use App\Models\PositionAdministrative;
 use App\Models\Poste;
 use App\Services\CarriereService;
+use App\Support\TableFiltre;
+use App\Support\TableTri;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -26,17 +28,30 @@ class CarriereController extends Controller
     {
         $this->authorize('carriere.view');
 
-        $evenements = CarriereEvenement::with(['agent', 'createur'])
+        $query = CarriereEvenement::with(['agent', 'createur'])
             ->when($request->filled('agent_id'), fn ($q) => $q->where('agent_id', $request->input('agent_id')))
-            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->input('type')))
-            ->latest('date_effet')
-            ->paginate(20)
-            ->withQueryString();
+            // Recherche multicritère par agent (matricule, nom, prénoms, emploi, structure).
+            ->when($request->filled('q'), fn ($q) => $q->whereHas('agent',
+                fn ($a) => $a->recherche($request->input('q'))))
+            ->when($request->filled('type'), fn ($q) => $q->where('type', $request->input('type')));
+
+        TableFiltre::appliquer($query, $request, [
+            'description' => 'description',
+            'reference'   => 'reference_acte',
+        ]);
+        TableTri::appliquer($query, $request, [
+            'date_effet' => 'date_effet',
+            'reference'  => 'reference_acte',
+            'agent'      => fn ($q, $sens) => $q->orderBy(
+                Agent::select('nom')->whereColumn('agents.id', 'carriere_evenements.agent_id'), $sens),
+        ], 'date_effet', 'desc');
+
+        $evenements = $query->paginate(20)->withQueryString();
 
         return view('carriere.index', [
             'evenements' => $evenements,
             'types'      => TypeEvenementCarriere::options(),
-            'filtres'    => $request->only(['agent_id', 'type']),
+            'filtres'    => $request->only(['agent_id', 'type', 'q']),
         ]);
     }
 
