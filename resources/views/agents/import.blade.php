@@ -17,6 +17,7 @@
             <li>Formats acceptés : <strong>.xlsx, .xls, .csv</strong> (max 5 Mo).</li>
             <li>Le <strong>matricule</strong> est obligatoire et sert de clé : un matricule <strong>déjà existant</strong> (ou en double dans le fichier) est <strong>ignoré</strong>, jamais dupliqué.</li>
             <li><strong>emploi</strong> et <strong>categorie</strong> sont reconnus par leur libellé / code exact (sinon laissés vides).</li>
+            <li><strong>Rattachement</strong> : renseignez la cascade (<strong>niveau_1 → niveau_4</strong>, du plus général au plus fin) ou à défaut <strong>structure</strong> / <strong>service</strong>. La structure est retrouvée automatiquement ; région, province et commune en sont déduites (pas de saisie en texte libre). Si la cascade est ambiguë, le rattachement est laissé vide.</li>
             <li><strong>sexe</strong> : M ou F ; <strong>date_naissance</strong> : JJ/MM/AAAA.</li>
         </ul>
     </div>

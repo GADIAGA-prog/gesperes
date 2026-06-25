@@ -56,17 +56,27 @@ class AgentsExport implements FromQuery, WithHeadings, WithMapping
             'date_integration' => ['label' => 'Date intégration', 'valeur' => fn (Agent $a) => $a->date_integration?->format('d/m/Y')],
             'date_nomination'  => ['label' => 'Date nomination', 'valeur' => fn (Agent $a) => $a->date_nomination?->format('d/m/Y')],
             'date_retraite'    => ['label' => 'Date retraite', 'valeur' => fn (Agent $a) => $a->date_retraite?->format('d/m/Y')],
+        ];
 
-            'structure'        => ['label' => 'Structure (unité)', 'valeur' => fn (Agent $a) => $a->structure?->niveauStructure()],
-            'service'          => ['label' => 'Service', 'valeur' => fn (Agent $a) => $a->structure?->niveauService()],
-            'rattachement_complet' => ['label' => 'Rattachement (chemin complet)', 'valeur' => fn (Agent $a) => $a->structure?->cheminComplet()],
-            'region'           => ['label' => 'Région', 'valeur' => fn (Agent $a) => $a->region],
-            'province'         => ['label' => 'Province', 'valeur' => fn (Agent $a) => $a->province],
-            'commune'          => ['label' => 'Commune', 'valeur' => fn (Agent $a) => $a->commune],
-            'etablissement'    => ['label' => 'Établissement', 'valeur' => fn (Agent $a) => $a->etablissement],
-            'localite'         => ['label' => 'Localité', 'valeur' => fn (Agent $a) => $a->localite?->libelle],
-            'date_affectation' => ['label' => 'Date affectation', 'valeur' => fn (Agent $a) => $a->date_affectation?->format('d/m/Y')],
+        // --- Rattachement hiérarchique (cascade) ---
+        // Remplace les anciennes colonnes Structure / Région / Province / Commune / Établissement.
+        // Niveau 1 = racine … Niveau N = unité la plus fine (service).
+        // « Structure » = avant-dernier niveau ; « Service » = dernier niveau
+        // (si un service est identifié, sa structure parente reste la structure de l'agent).
+        $profondeur = static::profondeurStructures();
+        for ($i = 1; $i <= $profondeur; $i++) {
+            $idx = $i - 1;
+            $colonnes["niveau_{$i}"] = [
+                'label'  => $i === 1 ? 'Rattachement niveau 1' : "Niveau {$i}",
+                'valeur' => fn (Agent $a) => $a->structure?->cheminNiveaux()[$idx] ?? null,
+            ];
+        }
+        $colonnes['structure']        = ['label' => 'Structure', 'valeur' => fn (Agent $a) => $a->structure?->niveauStructure()];
+        $colonnes['service']          = ['label' => 'Service', 'valeur' => fn (Agent $a) => $a->structure?->niveauService()];
+        $colonnes['localite']         = ['label' => 'Localité', 'valeur' => fn (Agent $a) => $a->localite?->libelle];
+        $colonnes['date_affectation'] = ['label' => 'Date affectation', 'valeur' => fn (Agent $a) => $a->date_affectation?->format('d/m/Y')];
 
+        $colonnes += [
             'type_enseignement' => ['label' => 'Type enseignement', 'valeur' => fn (Agent $a) => $a->typeEnseignement?->libelle],
             'specialite'        => ['label' => 'Spécialité', 'valeur' => fn (Agent $a) => $a->specialite?->libelle],
             'lieu_exercice'     => ['label' => "Lieu d'exercice", 'valeur' => fn (Agent $a) => $a->lieu_exercice?->label()],
@@ -83,17 +93,17 @@ class AgentsExport implements FromQuery, WithHeadings, WithMapping
             'observations'     => ['label' => 'Observations', 'valeur' => fn (Agent $a) => $a->observations],
         ];
 
-        // Niveaux de rattachement éclatés (Niveau 1 = racine … Niveau N = service).
-        $profondeur = \App\Models\Structure::profondeurMax();
-        for ($i = 1; $i <= $profondeur; $i++) {
-            $idx = $i - 1;
-            $colonnes["niveau_{$i}"] = [
-                'label'  => "Niveau {$i}",
-                'valeur' => fn (Agent $a) => $a->structure?->cheminNiveaux()[$idx] ?? null,
-            ];
-        }
-
         return $colonnes;
+    }
+
+    /**
+     * Profondeur maximale de la hiérarchie des structures, mémoïsée pour le process.
+     * Évite de relancer une requête à chaque ligne (map() est appelé pour chaque agent).
+     */
+    private static function profondeurStructures(): int
+    {
+        static $profondeur = null;
+        return $profondeur ??= \App\Models\Structure::profondeurMax();
     }
 
     /** Liste clé => libellé pour l'interface de sélection des colonnes. */
