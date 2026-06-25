@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Agent;
 use App\Models\EnveloppePersonnel;
+use App\Models\Structure;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -46,7 +47,8 @@ class VentilationService
         $residence = (float) config('grille.residence_taux', 0.10);
 
         $appliquer = function ($q) use ($filtres) {
-            $q->when($filtres['structure_id'] ?? null, fn ($q, $v) => $q->where('ag.structure_id', $v))
+            // Filtre structure « cascade » : la structure choisie ET tout son sous-arbre.
+            $q->when($filtres['structure_id'] ?? null, fn ($q, $v) => $q->whereIn('ag.structure_id', Structure::sousArbreIds($v)))
                 ->when($filtres['programme_id'] ?? null, fn ($q, $v) => $q->where('pr.id', $v))
                 ->when($filtres['action_id'] ?? null, fn ($q, $v) => $q->where('ac.id', $v));
             return $q;
@@ -122,7 +124,8 @@ class VentilationService
         $residence = (float) config('grille.residence_taux', 0.10);
 
         $appliquer = function ($q) use ($filtres) {
-            return $q->when($filtres['structure_id'] ?? null, fn ($q, $v) => $q->where('ag.structure_id', $v))
+            // Filtre structure « cascade » : la structure choisie ET tout son sous-arbre.
+            return $q->when($filtres['structure_id'] ?? null, fn ($q, $v) => $q->whereIn('ag.structure_id', Structure::sousArbreIds($v)))
                 ->when($filtres['programme_id'] ?? null, fn ($q, $v) => $q->where('pr.id', $v))
                 ->when($filtres['action_id'] ?? null, fn ($q, $v) => $q->where('s.action_id', $v));
         };
@@ -213,7 +216,8 @@ class VentilationService
             ->with(['emploi', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'fonction',
                     'structure.action.programme', 'indemnites.indemnite'])
             ->whereHas('structure.action')
-            ->when($filtres['structure_id'] ?? null, fn ($q, $v) => $q->where('structure_id', $v))
+            // Filtre structure « cascade » : la structure choisie ET tout son sous-arbre.
+            ->when($filtres['structure_id'] ?? null, fn ($q, $v) => $q->whereIn('structure_id', Structure::sousArbreIds($v)))
             ->when($filtres['action_id'] ?? null, fn ($q, $v) => $q->whereHas('structure', fn ($q) => $q->where('action_id', $v)))
             ->when($filtres['programme_id'] ?? null, fn ($q, $v) => $q->whereHas('structure.action', fn ($q) => $q->where('programme_id', $v)))
             ->orderBy('nom')->orderBy('prenoms')
