@@ -214,7 +214,7 @@ class VentilationService
 
         $agents = Agent::query()
             ->with(['emploi', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'fonction',
-                    'structure.action.programme', 'indemnites.indemnite'])
+                    'structure.action.programme', 'structure.parent.parent.parent.parent', 'indemnites.indemnite'])
             ->whereHas('structure.action')
             // Filtre structure « cascade » : la structure choisie ET tout son sous-arbre.
             ->when($filtres['structure_id'] ?? null, fn ($q, $v) => $q->whereIn('structure_id', Structure::sousArbreIds($v)))
@@ -228,7 +228,9 @@ class VentilationService
         foreach ($agents as $a) {
             $prog = $a->structure?->action?->programme;
             $pcode = $prog?->code ?? '—';
-            $slib = $a->structure?->libelle ?? '—';
+            // Regroupement par STRUCTURE (avant-dernier niveau de la cascade),
+            // cohérent avec la liste des agents ; le dernier niveau (service) est un détail.
+            $slib = $a->structure?->niveauStructure() ?? '—';
 
             $brut[$pcode]['libelle'] ??= $prog?->libelle ?? '—';
             $brut[$pcode]['structures'][$slib][] = $this->ligneAgent($a, $point, $carfo, $residence);
