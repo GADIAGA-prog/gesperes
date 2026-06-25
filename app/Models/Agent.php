@@ -105,16 +105,26 @@ class Agent extends Model
             return $query;
         }
 
-        // Recherche multi-mots : chaque mot doit matcher matricule, nom OU prénoms.
-        // Ainsi « GADIAGA Soumaïla » (nom + prénom) retrouve bien l'agent.
+        // Recherche multicritère multi-mots : chaque mot doit matcher AU MOINS un
+        // critère parmi matricule, nom, prénoms, emploi ou structure (cascade).
+        // Ainsi « GADIAGA Soumaïla » (nom + prénom) ou « Goulmou professeur » marchent.
         $mots = preg_split('/\s+/', $terme) ?: [$terme];
 
         return $query->where(function (Builder $q) use ($mots) {
             foreach ($mots as $mot) {
                 $q->where(function (Builder $w) use ($mot) {
-                    $w->where('matricule', 'like', "%{$mot}%")
-                      ->orWhere('nom', 'like', "%{$mot}%")
-                      ->orWhere('prenoms', 'like', "%{$mot}%");
+                    $like = "%{$mot}%";
+                    $w->where('matricule', 'like', $like)
+                      ->orWhere('nom', 'like', $like)
+                      ->orWhere('prenoms', 'like', $like)
+                      ->orWhereHas('emploi', fn (Builder $e) => $e->where('libelle', 'like', $like));
+
+                    // Structure : on retrouve les agents dont la structure (ou l'un
+                    // de ses parents dans la cascade) correspond au mot saisi.
+                    $structureIds = Structure::idsParLibelleEtSousArbre($mot);
+                    if (! empty($structureIds)) {
+                        $w->orWhereIn('structure_id', $structureIds);
+                    }
                 });
             }
         });

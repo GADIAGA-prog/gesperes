@@ -162,4 +162,48 @@ class Structure extends Model
 
         return array_keys($ids);
     }
+
+    /**
+     * Ids des structures dont le libellé contient le terme, ET de tout leur
+     * sous-arbre. Permet une recherche par structure « cascade » : saisir le
+     * libellé d'une direction ramène aussi les agents de ses services.
+     * Une seule requête, traversée en mémoire.
+     */
+    public static function idsParLibelleEtSousArbre(string $terme): array
+    {
+        $terme = trim($terme);
+        if ($terme === '') {
+            return [];
+        }
+
+        $toutes = static::get(['id', 'parent_id', 'libelle']);
+
+        $racines = $toutes
+            ->filter(fn ($s) => mb_stripos((string) $s->libelle, $terme) !== false)
+            ->pluck('id');
+
+        if ($racines->isEmpty()) {
+            return [];
+        }
+
+        $enfantsParParent = [];
+        foreach ($toutes as $s) {
+            $enfantsParParent[(int) $s->parent_id][] = (int) $s->id;
+        }
+
+        $ids = [];
+        $pile = $racines->map(fn ($id) => (int) $id)->all();
+        while ($pile) {
+            $courant = array_pop($pile);
+            if (isset($ids[$courant])) {
+                continue;
+            }
+            $ids[$courant] = true;
+            foreach ($enfantsParParent[$courant] ?? [] as $enfant) {
+                $pile[] = $enfant;
+            }
+        }
+
+        return array_keys($ids);
+    }
 }

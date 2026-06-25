@@ -43,28 +43,17 @@
         @endcan
     </div>
 
-    {{-- Recherche multicritère en direct : filtre au fil de la frappe, sans bouton.
+    {{-- Recherche multicritère unique en direct : matricule, nom, prénoms, emploi,
+         structure (cascade). Filtre au fil de la frappe, sans bouton.
          Conserve les attributs name/value pour rester fonctionnel sans JavaScript. --}}
-    <form method="GET" action="{{ route('agents.index') }}" class="card mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3"
+    <form method="GET" action="{{ route('agents.index') }}" class="card mb-4 flex gap-2"
           @submit.prevent="charger()">
         <input type="text" name="q" x-model="q" @input.debounce.350ms="charger()"
-               value="{{ $filtres['q'] ?? '' }}" placeholder="Matricule, nom, prénoms…" class="input sm:col-span-2" autocomplete="off">
-        <select name="region" x-model="region" @change="charger()" class="input">
-            <option value="">Toutes les régions</option>
-            @foreach ($regions as $region)
-                <option value="{{ $region }}" {{ ($filtres['region'] ?? '') === $region ? 'selected' : '' }}>{{ $region }}</option>
-            @endforeach
-        </select>
-        <div class="flex gap-2">
-            <select name="statut_dossier" x-model="statut" @change="charger()" class="input">
-                <option value="">Tous les statuts</option>
-                @foreach ($statuts as $statut)
-                    <option value="{{ $statut->value }}" {{ ($filtres['statut_dossier'] ?? '') === $statut->value ? 'selected' : '' }}>{{ $statut->label() }}</option>
-                @endforeach
-            </select>
-            {{-- Indicateur de chargement + fallback sans JS --}}
-            <button type="submit" class="btn btn-primary" x-text="chargement ? '…' : 'Filtrer'"></button>
-        </div>
+               value="{{ $filtres['q'] ?? '' }}"
+               placeholder="Rechercher : matricule, nom, prénoms, emploi, structure…"
+               class="input flex-1" autocomplete="off">
+        {{-- Indicateur de chargement + fallback sans JS --}}
+        <button type="submit" class="btn btn-primary" x-text="chargement ? '…' : 'Filtrer'"></button>
     </form>
 
     <div id="resultats" @click="paginer($event)" x-bind:class="chargement && 'opacity-50 transition'">
@@ -77,8 +66,6 @@
 function agentsRecherche() {
     return {
         q:       @json($filtres['q'] ?? ''),
-        region:  @json($filtres['region'] ?? ''),
-        statut:  @json($filtres['statut_dossier'] ?? ''),
         chargement: false,
 
         // Export : toutes les colonnes cochées par défaut.
@@ -88,9 +75,7 @@ function agentsRecherche() {
         // Construit la chaîne de paramètres courante (sans page).
         params(page) {
             const p = new URLSearchParams();
-            if (this.q)      p.set('q', this.q);
-            if (this.region) p.set('region', this.region);
-            if (this.statut) p.set('statut_dossier', this.statut);
+            if (this.q) p.set('q', this.q);
             if (page && page > 1) p.set('page', page);
             return p;
         },

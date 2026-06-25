@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Enums\Sexe;
 use App\Enums\SituationMatrimoniale;
-use App\Enums\StatutDossier;
 use App\Exports\AgentsExport;
 use App\Http\Requests\StoreAgentRequest;
 use App\Http\Requests\UpdateAgentRequest;
@@ -40,20 +39,13 @@ class AgentController extends Controller
         $agents = Agent::query()
             ->with(['emploi', 'structure.parent.parent.parent.parent', 'positionAdministrative'])
             ->recherche($request->input('q'))
-            ->region($request->input('region'))
-            ->when($request->filled('statut_dossier'), fn ($query) =>
-                $query->where('statut_dossier', $request->input('statut_dossier')))
             ->orderBy('nom')
             ->paginate(20)
             ->withQueryString();
 
-        $regions = Agent::query()->whereNotNull('region')->distinct()->orderBy('region')->pluck('region');
-
         $donnees = [
             'agents'   => $agents,
-            'regions'  => $regions,
-            'statuts'  => StatutDossier::cases(),
-            'filtres'  => $request->only(['q', 'region', 'statut_dossier']),
+            'filtres'  => $request->only(['q']),
             'colonnesExport' => AgentsExport::colonnesDisponibles(),
         ];
 
