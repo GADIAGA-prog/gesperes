@@ -33,7 +33,7 @@
                     <div class="mt-2 flex justify-end gap-2 border-t border-gray-100 pt-3">
                         <a x-bind:href="urlExport('{{ route('agents.export.pdf') }}')" class="btn btn-secondary text-sm">PDF</a>
                         <a x-bind:href="urlExportExcel('{{ route('agents.export') }}')"
-                           x-bind:class="! colonnes.length && 'pointer-events-none opacity-50'" class="btn btn-primary text-sm">Excel</a>
+                           x-bind:class="! colonnes.length && 'pointer-events-none opacity-50'" class="btn btn-primary text-sm">Excel (CSV)</a>
                     </div>
                 </div>
             </div>

@@ -128,4 +128,38 @@ class Structure extends Model
         $longueurs = array_map('count', static::cheminsParId());
         return $longueurs ? max($longueurs) : 1;
     }
+
+    /**
+     * Ids d'une structure et de TOUTES ses descendantes (sous-arbre complet).
+     * Permet de filtrer « DRH » et d'inclure les agents rattachés à ses services
+     * (ex. service de gestion des carrières), pas seulement la DRH elle-même.
+     */
+    public static function sousArbreIds(int|string|null $racineId): array
+    {
+        $racineId = (int) $racineId;
+        if (! $racineId) {
+            return [];
+        }
+
+        // Carte parent_id => [ids enfants], en une seule requête.
+        $enfantsParParent = [];
+        foreach (static::pluck('parent_id', 'id') as $id => $parentId) {
+            $enfantsParParent[(int) $parentId][] = (int) $id;
+        }
+
+        $ids = [];
+        $pile = [$racineId];
+        while ($pile) {
+            $courant = array_pop($pile);
+            if (isset($ids[$courant])) {
+                continue;
+            }
+            $ids[$courant] = true;
+            foreach ($enfantsParParent[$courant] ?? [] as $enfant) {
+                $pile[] = $enfant;
+            }
+        }
+
+        return array_keys($ids);
+    }
 }

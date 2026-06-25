@@ -112,6 +112,19 @@ class AgentsExport implements FromQuery, WithHeadings, WithMapping
         return array_map(fn ($c) => $c['label'], static::catalogue());
     }
 
+    /**
+     * Colonnes retenues (label + valeur), dans l'ordre du catalogue.
+     * Utilisé par l'export CSV streamé (mémoire bornée) du contrôleur.
+     *
+     * @return array<int, array{label: string, valeur: \Closure}>
+     */
+    public function colonnesResolues(): array
+    {
+        $catalogue = static::catalogue();
+
+        return array_values(array_map(fn ($cle) => $catalogue[$cle], $this->colonnes));
+    }
+
     public function query()
     {
         return Agent::query()

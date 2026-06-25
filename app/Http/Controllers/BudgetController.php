@@ -84,7 +84,10 @@ class BudgetController extends Controller
             ->when($request->filled('q'), fn ($q) => $q->recherche($request->input('q')))
             ->when($request->filled('emploi_id'), fn ($q) => $q->where('emploi_id', $request->input('emploi_id')))
             ->when($request->filled('categorie_id'), fn ($q) => $q->where('categorie_id', $request->input('categorie_id')))
-            ->when($request->filled('structure_id'), fn ($q) => $q->where('structure_id', $request->input('structure_id')));
+            // Filtre structure « cascade » : inclut la structure choisie ET tous ses
+            // services/sous-structures (ex. DRH → service de gestion des carrières).
+            ->when($request->filled('structure_id'), fn ($q) =>
+                $q->whereIn('structure_id', Structure::sousArbreIds($request->integer('structure_id'))));
 
         $agents = null;
         $synthese = null;

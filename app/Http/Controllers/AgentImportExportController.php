@@ -14,6 +14,7 @@ use Illuminate\View\View;
 use Maatwebsite\Excel\Facades\Excel;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AgentImportExportController extends Controller
 {
@@ -57,15 +58,40 @@ class AgentImportExportController extends Controller
         return redirect()->route('agents.index')->with('success', $message);
     }
 
-    public function export(Request $request): BinaryFileResponse
+    /**
+     * Export CSV streamé des agents (filtres + colonnes choisies de l'index).
+     * Streamé ligne par ligne via un curseur paresseux : mémoire bornée et pas
+     * de délai d'exécution, indispensable pour exporter toute la base (~43 000
+     * agents) — un .xlsx en mémoire saturait la RAM (HTTP 500).
+     * Le fichier .csv (BOM UTF-8 + séparateur « ; ») s'ouvre directement dans Excel.
+     */
+    public function export(Request $request): StreamedResponse
     {
         $this->authorize('agents.export');
 
         $filtres = $request->only(['q', 'region', 'statut_dossier']);
         $colonnes = (array) $request->input('colonnes', []);
-        $nom = 'agents_' . now()->format('Ymd_His') . '.xlsx';
 
-        return Excel::download(new AgentsExport($filtres, $colonnes), $nom);
+        $export = new AgentsExport($filtres, $colonnes);
+        $cols = $export->colonnesResolues();
+        $requete = $export->query();
+
+        $nom = 'agents_' . now()->format('Ymd_His') . '.csv';
+
+        return response()->streamDownload(function () use ($cols, $requete) {
+            $sortie = fopen('php://output', 'w');
+            fwrite($sortie, "\xEF\xBB\xBF"); // BOM UTF-8 (accents corrects dans Excel)
+            fputcsv($sortie, array_map(fn ($c) => $c['label'], $cols), ';', '"', '');
+
+            foreach ($requete->lazy(1000) as $agent) {
+                fputcsv($sortie, array_map(fn ($c) => (string) ($c['valeur']($agent) ?? ''), $cols), ';', '"', '');
+            }
+
+            fclose($sortie);
+        }, $nom, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $nom . '"',
+        ]);
     }
 
     /** Fiche individuelle d'un agent au format PDF. */
