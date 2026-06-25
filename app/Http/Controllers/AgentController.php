@@ -24,6 +24,8 @@ use App\Models\Specialite;
 use App\Models\Structure;
 use App\Models\TypeEnseignement;
 use App\Services\AgentService;
+use App\Support\TableFiltre;
+use App\Support\TableTri;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -36,12 +38,27 @@ class AgentController extends Controller
     {
         $this->authorize('agents.view');
 
-        $agents = Agent::query()
+        $query = Agent::query()
             ->with(['emploi', 'structure.parent.parent.parent.parent', 'positionAdministrative'])
-            ->recherche($request->input('q'))
-            ->orderBy('nom')
-            ->paginate(20)
-            ->withQueryString();
+            ->recherche($request->input('q'));
+
+        // Filtre par colonne (en-tête) + tri par clic, côté serveur.
+        TableFiltre::appliquer($query, $request, [
+            'matricule' => 'matricule',
+            'nom'       => fn ($q, $v) => $q->where(fn ($w) => $w->where('nom', 'like', "%{$v}%")->orWhere('prenoms', 'like', "%{$v}%")),
+            'emploi'    => fn ($q, $v) => $q->whereHas('emploi', fn ($e) => $e->where('libelle', 'like', "%{$v}%")),
+            'structure' => fn ($q, $v) => $q->whereIn('structure_id', Structure::idsParLibelleEtSousArbre($v)),
+            'statut'    => fn ($q, $v) => $q->where('statut_dossier', 'like', "%{$v}%"),
+        ]);
+        TableTri::appliquer($query, $request, [
+            'matricule' => 'matricule',
+            'nom'       => 'nom',
+            'emploi'    => fn ($q, $s) => $q->orderBy(Emploi::select('libelle')->whereColumn('emplois.id', 'agents.emploi_id'), $s),
+            'structure' => fn ($q, $s) => $q->orderBy(Structure::select('libelle')->whereColumn('structures.id', 'agents.structure_id'), $s),
+            'statut'    => 'statut_dossier',
+        ], 'nom', 'asc');
+
+        $agents = $query->paginate(20)->withQueryString();
 
         $donnees = [
             'agents'   => $agents,

@@ -56,7 +56,7 @@
         <button type="submit" class="btn btn-primary" x-text="chargement ? '…' : 'Filtrer'"></button>
     </form>
 
-    <div id="resultats" @click="paginer($event)" x-bind:class="chargement && 'opacity-50 transition'">
+    <div id="resultats" @click="naviguer($event)" @change="filtrerSi($event)" x-bind:class="chargement && 'opacity-50 transition'">
         @include('agents._resultats')
     </div>
 </div>
@@ -72,10 +72,20 @@ function agentsRecherche() {
         toutesColonnes: @json(array_keys($colonnesExport ?? [])),
         colonnes:       @json(array_keys($colonnesExport ?? [])),
 
-        // Construit la chaîne de paramètres courante (sans page).
+        // Construit la chaîne de paramètres courante : recherche globale + tri
+        // (lu de l'URL) + filtres de colonne (lus du tableau affiché).
         params(page) {
             const p = new URLSearchParams();
             if (this.q) p.set('q', this.q);
+
+            const courant = new URL(window.location.href).searchParams;
+            if (courant.get('tri'))  p.set('tri', courant.get('tri'));
+            if (courant.get('sens')) p.set('sens', courant.get('sens'));
+
+            document.querySelectorAll('#resultats [data-filtre]').forEach((el) => {
+                if (el.value) p.set(el.name, el.value);
+            });
+
             if (page && page > 1) p.set('page', page);
             return p;
         },
@@ -99,12 +109,28 @@ function agentsRecherche() {
             this.fetchInto(url);
         },
 
-        // Pagination interceptée pour rester en AJAX (uniquement les liens de pagination).
-        paginer(e) {
+        // Liens interceptés pour rester en AJAX : pagination + tri (en-têtes).
+        // On repart des paramètres courants (q + filtres) et on greffe tri/sens/page du lien cliqué.
+        naviguer(e) {
             const a = e.target.closest('a');
-            if (! a || ! a.closest('[data-pagination]')) return;
+            if (! a || ! a.href) return;
+            if (! a.closest('[data-pagination]') && ! a.closest('thead')) return;
             e.preventDefault();
-            if (a.href) this.fetchInto(a.href);
+
+            const src = new URL(a.href);
+            const p = this.params();
+            ['tri', 'sens', 'page'].forEach((k) => {
+                const v = src.searchParams.get(k);
+                v ? p.set(k, v) : p.delete(k);
+            });
+            this.fetchInto(@json(route('agents.index')) + '?' + p.toString());
+        },
+
+        // Filtre de colonne appliqué au "change" (Entrée / sortie de champ) pour
+        // éviter de recharger le tableau — et perdre le focus — à chaque frappe.
+        filtrerSi(e) {
+            if (! e.target.matches('[data-filtre]')) return;
+            this.charger();
         },
 
         fetchInto(url) {

@@ -4,13 +4,23 @@
     <table class="min-w-full divide-y divide-gray-200">
         <thead>
             <tr class="text-left text-xs uppercase tracking-wide text-gray-500">
-                <th class="table-head">Matricule</th>
-                <th class="table-head">Nom & prénoms</th>
-                <th class="table-head">Emploi</th>
-                <th class="table-head">Structure</th>
+                <x-tri.entete cle="matricule">Matricule</x-tri.entete>
+                <x-tri.entete cle="nom">Nom & prénoms</x-tri.entete>
+                <x-tri.entete cle="emploi">Emploi</x-tri.entete>
+                <x-tri.entete cle="structure">Structure</x-tri.entete>
                 <th class="table-head">Service</th>
-                <th class="table-head">Dossier</th>
+                <x-tri.entete cle="statut">Dossier</x-tri.entete>
                 <th class="table-head text-right">Actions</th>
+            </tr>
+            {{-- Filtres par colonne : appliqués en AJAX au "change" (Entrée / sortie de champ). --}}
+            @php $f = (array) request('f', []); @endphp
+            <tr class="bg-gray-50/70">
+                <th class="px-3 py-1.5 font-normal"><input type="text" data-filtre name="f[matricule]" value="{{ $f['matricule'] ?? '' }}" placeholder="Mle…" class="w-full rounded border-gray-200 text-xs py-1 px-2 font-normal placeholder:text-gray-400"></th>
+                <th class="px-3 py-1.5 font-normal"><input type="text" data-filtre name="f[nom]" value="{{ $f['nom'] ?? '' }}" placeholder="Nom/prénoms…" class="w-full rounded border-gray-200 text-xs py-1 px-2 font-normal placeholder:text-gray-400"></th>
+                <th class="px-3 py-1.5 font-normal"><input type="text" data-filtre name="f[emploi]" value="{{ $f['emploi'] ?? '' }}" placeholder="Emploi…" class="w-full rounded border-gray-200 text-xs py-1 px-2 font-normal placeholder:text-gray-400"></th>
+                <th class="px-3 py-1.5 font-normal" colspan="2"><input type="text" data-filtre name="f[structure]" value="{{ $f['structure'] ?? '' }}" placeholder="Structure / service…" class="w-full rounded border-gray-200 text-xs py-1 px-2 font-normal placeholder:text-gray-400"></th>
+                <th class="px-3 py-1.5 font-normal"><input type="text" data-filtre name="f[statut]" value="{{ $f['statut'] ?? '' }}" placeholder="Dossier…" class="w-full rounded border-gray-200 text-xs py-1 px-2 font-normal placeholder:text-gray-400"></th>
+                <th class="px-3 py-1.5"></th>
             </tr>
         </thead>
         <tbody class="divide-y divide-gray-100">
