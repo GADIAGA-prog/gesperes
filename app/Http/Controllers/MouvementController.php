@@ -22,6 +22,9 @@ class MouvementController extends Controller
 
         $mouvements = Mouvement::with(['agent', 'anciennePosition', 'nouvellePosition'])
             ->when($request->filled('agent_id'), fn ($q) => $q->where('agent_id', $request->input('agent_id')))
+            // Recherche multicritère par agent (matricule, nom, prénoms, emploi, structure).
+            ->when($request->filled('q'), fn ($q) => $q->whereHas('agent',
+                fn ($a) => $a->recherche($request->input('q'))))
             ->when($request->filled('famille'), fn ($q) => $q->whereHas('nouvellePosition',
                 fn ($p) => $p->where('categorie', $request->input('famille'))))
             ->latest('date_effet')
@@ -31,7 +34,7 @@ class MouvementController extends Controller
         return view('mouvements.index', [
             'mouvements' => $mouvements,
             'familles'   => CategoriePosition::options(),
-            'filtres'    => $request->only(['agent_id', 'famille']),
+            'filtres'    => $request->only(['agent_id', 'famille', 'q']),
         ]);
     }
 

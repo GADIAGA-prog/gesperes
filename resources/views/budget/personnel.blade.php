@@ -9,7 +9,7 @@
 
 <form method="GET" class="card mb-4 grid grid-cols-1 sm:grid-cols-5 gap-3">
     <input type="hidden" name="mode" value="{{ $mode }}">
-    <input type="text" name="q" value="{{ $filtres['q'] ?? '' }}" placeholder="Matricule, nom, prénoms…" class="input">
+    <input type="text" name="q" value="{{ $filtres['q'] ?? '' }}" placeholder="Matricule, nom, prénoms, emploi, structure…" class="input">
     <select name="structure_id" class="input">
         <option value="">Toutes les structures</option>
         @foreach ($structures as $id => $libelle)
@@ -35,22 +35,22 @@
 </form>
 
 {{-- Bascule du mode d'affichage --}}
-<div class="flex gap-2 mb-4">
-    <a href="{{ route('budget.personnel', array_merge(request()->query(), ['mode' => 'agent'])) }}"
-       class="btn {{ $mode === 'agent' ? 'btn-primary' : 'btn-secondary' }} text-sm">Par agent</a>
-    <a href="{{ route('budget.personnel', array_merge(request()->query(), ['mode' => 'structure'])) }}"
-       class="btn {{ $mode === 'structure' ? 'btn-primary' : 'btn-secondary' }} text-sm">Synthèse par structure</a>
+<div class="flex flex-wrap gap-2 mb-4">
+    @foreach (['agent' => 'Par agent', 'structure' => 'Synthèse par structure', 'programme' => 'Par programme', 'action' => 'Par action'] as $val => $label)
+        <a href="{{ route('budget.personnel', array_merge(request()->query(), ['mode' => $val])) }}"
+           class="btn {{ $mode === $val ? 'btn-primary' : 'btn-secondary' }} text-sm">{{ $label }}</a>
+    @endforeach
 </div>
 
-@if ($mode === 'structure')
-    {{-- ===== Synthèse par structure (cascade) ===== --}}
-    <p class="text-sm text-gray-500 mb-3">Dépenses de personnel agrégées par structure d'affectation (rattachement complet). Montants en FCFA, hors CARFO.
+@if ($mode !== 'agent')
+    {{-- ===== Synthèse agrégée (structure / programme / action) ===== --}}
+    <p class="text-sm text-gray-500 mb-3">Dépenses de personnel agrégées par {{ strtolower($libelleColonne) }}. Montants en FCFA, hors CARFO.
         <span class="text-gray-400">Astuce : filtrez par structure/emploi pour accélérer sur les gros effectifs.</span></p>
     <div class="card overflow-x-auto">
         <table class="min-w-full text-sm">
             <thead>
                 <tr class="text-left uppercase tracking-wide text-xs text-gray-500 border-b border-gray-200">
-                    <th class="table-head">Structure (rattachement)</th>
+                    <th class="table-head">{{ $libelleColonne }}</th>
                     <th class="table-head text-right">Effectif</th>
                     <th class="table-head text-right">Total mensuel</th>
                     <th class="table-head text-right">Total annuel</th>
@@ -59,7 +59,7 @@
             <tbody class="divide-y divide-gray-100">
                 @forelse ($synthese as $row)
                     <tr class="hover:bg-gray-50">
-                        <td class="px-3 py-2 text-gray-700">{{ $row['chemin'] }}</td>
+                        <td class="px-3 py-2 text-gray-700">{{ $row['libelle'] }}</td>
                         <td class="px-3 py-2 text-right">{{ number_format($row['effectif'], 0, ',', ' ') }}</td>
                         <td class="px-3 py-2 text-right">{{ $fmt($row['mois']) }}</td>
                         <td class="px-3 py-2 text-right font-semibold">{{ $fmt($row['annuel']) }}</td>

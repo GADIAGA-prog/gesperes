@@ -77,9 +77,10 @@ class BudgetController extends Controller
     {
         $this->authorize('budget.view');
 
-        $mode = $request->input('mode') === 'structure' ? 'structure' : 'agent';
+        $modes = ['agent', 'structure', 'programme', 'action'];
+        $mode = in_array($request->input('mode'), $modes, true) ? $request->input('mode') : 'agent';
 
-        // Requête filtrée commune aux deux modes (closure : un builder neuf à chaque appel).
+        // Requête filtrée commune à tous les modes (closure : un builder neuf à chaque appel).
         $base = fn () => Agent::query()
             ->when($request->filled('q'), fn ($q) => $q->recherche($request->input('q')))
             ->when($request->filled('emploi_id'), fn ($q) => $q->where('emploi_id', $request->input('emploi_id')))
@@ -91,27 +92,31 @@ class BudgetController extends Controller
 
         $agents = null;
         $synthese = null;
+        $libelleColonne = null;
 
-        if ($mode === 'structure') {
-            // Agrégation des dépenses de personnel par structure d'affectation (cascade).
-            // Mémoire bornée (accumulateur par structure) ; calcul par lots pour tenir les gros effectifs.
+        if ($mode !== 'agent') {
+            // Agrégation des dépenses de personnel par structure / programme / action.
+            // Mémoire bornée (accumulateur par clé) ; calcul par lots pour les gros effectifs.
+            $libelleColonne = match ($mode) {
+                'structure' => 'Structure (rattachement)',
+                'programme' => 'Programme',
+                'action'    => 'Action',
+            };
+
             $acc = [];
-            $base()->with(['indice', 'indemnites.indemnite', 'fonction', 'structure'])
-                ->chunk(500, function ($lot) use (&$acc, $paie) {
+            $base()->with(['indice', 'indemnites.indemnite', 'fonction', 'structure.action.programme'])
+                ->chunk(500, function ($lot) use (&$acc, $paie, $mode) {
                     foreach ($lot as $agent) {
                         $p = $paie->ligne($agent);
-                        $sid = $agent->structure_id ?: 0;
-                        $acc[$sid] ??= ['structure' => $agent->structure, 'effectif' => 0, 'mois' => 0.0, 'annuel' => 0.0];
-                        $acc[$sid]['effectif']++;
-                        $acc[$sid]['mois']   += $p['total_mois'];
-                        $acc[$sid]['annuel'] += $p['total_annuel'];
+                        [$cle, $libelle] = $this->cleSynthesePersonnel($agent, $mode);
+                        $acc[$cle] ??= ['libelle' => $libelle, 'effectif' => 0, 'mois' => 0.0, 'annuel' => 0.0];
+                        $acc[$cle]['effectif']++;
+                        $acc[$cle]['mois']   += $p['total_mois'];
+                        $acc[$cle]['annuel'] += $p['total_annuel'];
                     }
                 });
 
-            $synthese = collect($acc)
-                ->map(fn ($r) => $r + ['chemin' => $r['structure']?->cheminComplet() ?? 'Sans structure'])
-                ->sortBy('chemin')
-                ->values();
+            $synthese = collect($acc)->sortBy('libelle')->values();
         } else {
             $agents = $base()
                 ->with(['emploi', 'poste', 'fonction', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'indemnites.indemnite', 'structure.action'])
@@ -125,14 +130,43 @@ class BudgetController extends Controller
         }
 
         return view('budget.personnel', [
-            'mode'       => $mode,
-            'agents'     => $agents,
-            'synthese'   => $synthese,
-            'emplois'    => Emploi::orderBy('libelle')->pluck('libelle', 'id'),
-            'categories' => Categorie::orderBy('code')->pluck('code', 'id'),
-            'structures' => Structure::orderBy('libelle')->pluck('libelle', 'id'),
-            'filtres'    => $request->only(['q', 'emploi_id', 'categorie_id', 'structure_id']),
+            'mode'           => $mode,
+            'agents'         => $agents,
+            'synthese'       => $synthese,
+            'libelleColonne' => $libelleColonne,
+            'emplois'        => Emploi::orderBy('libelle')->pluck('libelle', 'id'),
+            'categories'     => Categorie::orderBy('code')->pluck('code', 'id'),
+            'structures'     => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            'filtres'        => $request->only(['q', 'emploi_id', 'categorie_id', 'structure_id']),
         ]);
+    }
+
+    /**
+     * Clé + libellé d'agrégation d'un agent selon le mode de synthèse choisi.
+     * Programme/Action sont dérivés de la structure d'affectation (structure → action → programme).
+     *
+     * @return array{0: int|string, 1: string}
+     */
+    private function cleSynthesePersonnel(Agent $agent, string $mode): array
+    {
+        return match ($mode) {
+            'programme' => (function () use ($agent) {
+                $prog = $agent->structure?->action?->programme;
+                return $prog
+                    ? [$prog->id, trim($prog->code . ' — ' . $prog->libelle, ' —')]
+                    : [0, 'Sans programme'];
+            })(),
+            'action' => (function () use ($agent) {
+                $action = $agent->structure?->action;
+                return $action
+                    ? [$action->id, trim($action->code . ' — ' . $action->libelle, ' —')]
+                    : [0, 'Sans action'];
+            })(),
+            default => [ // structure
+                $agent->structure_id ?: 0,
+                $agent->structure?->cheminComplet() ?: 'Sans structure',
+            ],
+        };
     }
 
     /**

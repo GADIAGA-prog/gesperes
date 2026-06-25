@@ -21,13 +21,15 @@
 </div>
 
 <form method="GET" class="card mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+    <input type="text" name="q" value="{{ $filtres['q'] ?? '' }}"
+           placeholder="Rechercher un agent : matricule, nom, prénoms, emploi, structure…" class="input">
     <select name="famille" class="input">
         <option value="">Toutes les familles</option>
         @foreach ($familles as $value => $label)
             <option value="{{ $value }}" {{ ($filtres['famille'] ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
         @endforeach
     </select>
-    <div class="sm:col-span-2 flex gap-2">
+    <div class="flex gap-2">
         <button type="submit" class="btn btn-primary">Filtrer</button>
         <a href="{{ route('mouvements.index') }}" class="btn btn-secondary">Réinitialiser</a>
     </div>
