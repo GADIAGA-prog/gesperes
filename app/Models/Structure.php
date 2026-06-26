@@ -13,7 +13,7 @@ class Structure extends Model
 
     protected $fillable = [
         'code', 'libelle', 'type', 'parent_id', 'action_id', 'region_id', 'province_id',
-        'region', 'province', 'localite_id', 'responsable_agent_id', 'actif',
+        'region', 'province', 'localite_id', 'zone_id', 'responsable_agent_id', 'actif',
     ];
 
     protected $casts = [
@@ -39,6 +39,7 @@ class Structure extends Model
     public function region() { return $this->belongsTo(Region::class); }
     public function province() { return $this->belongsTo(Province::class); }
     public function localite() { return $this->belongsTo(Localite::class); }
+    public function zone() { return $this->belongsTo(Zone::class); }
     public function action() { return $this->belongsTo(Action::class); }
     public function responsable() { return $this->belongsTo(Agent::class, 'responsable_agent_id'); }
     public function agents() { return $this->hasMany(Agent::class); }
@@ -120,6 +121,41 @@ class Structure extends Model
             $chemins[$id] = $niveaux;
         }
         return $chemins;
+    }
+
+    /**
+     * Carte structure_id => code de zone, résolue par cascade : la zone de la
+     * structure, sinon celle de l'ancêtre le plus proche qui en porte une.
+     * Permet de dériver la zone d'un agent depuis sa direction régionale/
+     * provinciale en une seule requête (mémoïsable côté appelant).
+     *
+     * @return array<int, string>
+     */
+    public static function zonesParStructure(): array
+    {
+        $all = static::get(['id', 'parent_id', 'zone_id'])->keyBy('id');
+        $zones = Zone::pluck('code', 'id');
+
+        $resoudre = function ($id) use (&$resoudre, $all, $zones) {
+            $node = $all[$id] ?? null;
+            $guard = 0;
+            while ($node && $guard < 12) {
+                if ($node->zone_id && isset($zones[$node->zone_id])) {
+                    return $zones[$node->zone_id];
+                }
+                $node = $node->parent_id ? ($all[$node->parent_id] ?? null) : null;
+                $guard++;
+            }
+            return null;
+        };
+
+        $map = [];
+        foreach ($all as $id => $_) {
+            if ($zone = $resoudre($id)) {
+                $map[$id] = $zone;
+            }
+        }
+        return $map;
     }
 
     /** Profondeur maximale de la hiérarchie (nombre de niveaux). */

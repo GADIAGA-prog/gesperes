@@ -11,6 +11,8 @@ use App\Models\Echelle;
 use App\Models\Emploi;
 use App\Models\Indemnite;
 use App\Models\Indice;
+use App\Models\Structure;
+use App\Models\Zone;
 use App\Services\IndemniteService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use PHPUnit\Framework\Attributes\Test;
@@ -87,5 +89,27 @@ class IndemniteServiceTest extends TestCase
         $nonEns = Agent::create(['matricule' => 'L3', 'nom' => 'A', 'prenoms' => 'B', 'sexe' => 'M',
             'categorie_id' => $cat->id, 'emploi_id' => $admin->id, 'lieu_exercice' => LieuExercice::AU_BUREAU->value]);
         $this->assertSame(50000.0, $service->logement($nonEns));
+    }
+
+    #[Test]
+    public function la_zone_est_heritee_de_la_structure_par_cascade(): void
+    {
+        $semi = Zone::create(['code' => 'semi_urbaine', 'libelle' => 'Semi-urbaine', 'actif' => true]);
+        $region = Structure::create(['code' => 'BNK', 'libelle' => 'Bankui', 'type' => 'direction', 'zone_id' => $semi->id]);
+        $service = Structure::create(['code' => 'SVC', 'libelle' => 'Service X', 'type' => 'service', 'parent_id' => $region->id]);
+
+        $agent = Agent::create(['matricule' => 'Z1', 'nom' => 'A', 'prenoms' => 'B', 'sexe' => 'M', 'structure_id' => $service->id]);
+
+        // La structure de l'agent n'a pas de zone, mais sa direction parente oui.
+        $this->assertSame('semi_urbaine', (new IndemniteService())->zonePour($agent->load('structure')));
+    }
+
+    #[Test]
+    public function zone_urbaine_par_defaut_pour_l_administration_centrale(): void
+    {
+        $central = Structure::create(['code' => 'SG', 'libelle' => 'Secrétariat général', 'type' => 'direction']);
+        $agent = Agent::create(['matricule' => 'Z2', 'nom' => 'A', 'prenoms' => 'B', 'sexe' => 'M', 'structure_id' => $central->id]);
+
+        $this->assertSame('urbaine', (new IndemniteService())->zonePour($agent->load('structure')));
     }
 }

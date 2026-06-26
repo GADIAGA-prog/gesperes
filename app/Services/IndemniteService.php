@@ -31,6 +31,7 @@ class IndemniteService
     private ?array $astreinteMap = null;
     private ?array $specifiqueMap = null;
     private ?array $techniciteMap = null;
+    private ?array $zonesStructure = null;
 
     /** Montant mensuel d'une indemnité pour un agent donné (interface générique UI). */
     public function calculer(Agent $agent, Indemnite $indemnite): float
@@ -99,43 +100,29 @@ class IndemniteService
     /**
      * Zone d'astreinte/résidence de l'agent :
      *  1. la zone de sa localité si elle est renseignée ;
-     *  2. sinon, administration centrale (hors DRESFPT/DPESFPT) = Ouagadougou = urbaine ;
-     *  3. sinon (décentralisé non rattaché) : indéterminée (null).
+     *  2. sinon la zone portée par sa direction (régionale/provinciale) via la cascade ;
+     *  3. sinon, administration centrale (Ouagadougou) = urbaine.
      */
-    public function zonePour(Agent $agent): ?string
+    public function zonePour(Agent $agent): string
     {
         if ($zone = $agent->localite?->zone?->code) {
             return $zone;
         }
 
-        return $this->estDecentralise($agent) ? null : 'urbaine';
+        return $this->mapZonesStructure()[$agent->structure_id] ?? 'urbaine';
     }
 
     /* ───────── Internes ───────── */
 
     private function emploiZone(Agent $agent, array $map): ?float
     {
-        $zone = $this->zonePour($agent);
         $emploi = $agent->emploi?->code;
-        if ($zone === null || ! $emploi) {
+        if (! $emploi) {
             return null;
         }
 
-        // Zone connue mais emploi absent du barème = pas d'indemnité (0), pas un « inconnu ».
-        return $map[$emploi . '|' . $zone] ?? 0.0;
-    }
-
-    /** Un agent est décentralisé si un maillon de sa cascade est une DRESFPT/DPESFPT. */
-    private function estDecentralise(Agent $agent): bool
-    {
-        foreach ($agent->structure?->cheminNiveaux() ?? [] as $libelle) {
-            $u = mb_strtoupper((string) $libelle);
-            if (str_contains($u, 'DRESFPT') || str_contains($u, 'DPESFPT')) {
-                return true;
-            }
-        }
-
-        return false;
+        // Zone connue mais emploi absent du barème = pas d'indemnité (0).
+        return $map[$emploi . '|' . $this->zonePour($agent)] ?? 0.0;
     }
 
     /** Dispatch barème générique (UI : calculer()). */
@@ -182,5 +169,11 @@ class IndemniteService
     {
         return $this->techniciteMap ??= BaremeTechnicite::where('actif', true)->get()
             ->mapWithKeys(fn ($r) => [$r->echelle_code => (float) $r->montant])->all();
+    }
+
+    /** Carte structure_id => zone (cascade), mémoïsée pour les calculs de masse. */
+    private function mapZonesStructure(): array
+    {
+        return $this->zonesStructure ??= \App\Models\Structure::zonesParStructure();
     }
 }
