@@ -33,13 +33,22 @@ class IndemniteService
     private ?array $techniciteMap = null;
     private ?array $zonesStructure = null;
 
+    public function __construct(private AllocationFamilialeService $allocation) {}
+
     /** Montant mensuel d'une indemnité pour un agent donné (interface générique UI). */
     public function calculer(Agent $agent, Indemnite $indemnite): float
     {
-        return match ($indemnite->mode) {
-            ModeIndemnite::MONTANT_FIXE => (float) $indemnite->valeur,
-            ModeIndemnite::POURCENTAGE  => round((float) $indemnite->valeur / 100 * $this->base($agent), 2),
-            ModeIndemnite::BAREME       => $this->baremePourCode($agent, (string) $indemnite->bareme) ?? 0.0,
+        // Indemnités pilotées par une règle propre (et non par le montant du référentiel) :
+        //  - responsabilité = indemnité de la fonction de l'agent ;
+        //  - allocation familiale = calcul selon le nombre d'enfants.
+        return match ($indemnite->code) {
+            'RESP'  => (float) ($agent->fonction?->indemnite_responsabilite ?? 0),
+            'ALLOC' => $this->allocation->calculer((int) ($agent->nombre_enfants ?? 0)),
+            default => match ($indemnite->mode) {
+                ModeIndemnite::MONTANT_FIXE => (float) $indemnite->valeur,
+                ModeIndemnite::POURCENTAGE  => round((float) $indemnite->valeur / 100 * $this->base($agent), 2),
+                ModeIndemnite::BAREME       => $this->baremePourCode($agent, (string) $indemnite->bareme) ?? 0.0,
+            },
         };
     }
 

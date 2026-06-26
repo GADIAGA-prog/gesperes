@@ -59,7 +59,7 @@ class IndemniteController extends Controller
         $this->authorize('indemnites.view');
 
         $attributions = $agent->indemnites()->with('indemnite')->get();
-        $calculees = $this->service->pourAgent($agent->load(['emploi', 'categorie', 'echelle', 'localite.zone']));
+        $calculees = $this->service->pourAgent($agent->load(['emploi', 'fonction', 'categorie', 'echelle', 'localite.zone']));
 
         return view('indemnites.agent', [
             'agent'        => $agent,
@@ -129,7 +129,7 @@ class IndemniteController extends Controller
     {
         $this->authorize('indemnites.view');
 
-        $agent->load(['emploi', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'localite.zone', 'structure']);
+        $agent->load(['emploi', 'fonction', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'localite.zone', 'structure']);
 
         $indemnites = collect($this->service->pourAgent($agent))->filter(fn ($c) => $c['montant'] > 0)->values();
         $salaire = (float) ($agent->indice?->salaire_indiciaire ?? 0);

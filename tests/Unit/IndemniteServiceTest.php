@@ -37,7 +37,7 @@ class IndemniteServiceTest extends TestCase
         $fixe = Indemnite::create(['code' => 'LOG', 'libelle' => 'Logement', 'mode' => 'montant_fixe', 'valeur' => 20000, 'actif' => true]);
         $pct  = Indemnite::create(['code' => 'SUJ', 'libelle' => 'Sujétion', 'mode' => 'pourcentage', 'valeur' => 10, 'actif' => true]);
 
-        $service = new IndemniteService();
+        $service = app(IndemniteService::class);
 
         $this->assertSame(20000.0, $service->calculer($agent, $fixe));
         $this->assertEqualsWithDelta(5827.5, $service->calculer($agent, $pct), 0.01);
@@ -58,7 +58,7 @@ class IndemniteServiceTest extends TestCase
 
         $tech = Indemnite::create(['code' => 'TECH', 'libelle' => 'Technicité', 'mode' => 'bareme', 'bareme' => 'technicite', 'valeur' => 0, 'actif' => true]);
 
-        $this->assertSame(27000.0, (new IndemniteService())->calculer($agent, $tech));
+        $this->assertSame(27000.0, (app(IndemniteService::class))->calculer($agent, $tech));
     }
 
     #[Test]
@@ -73,7 +73,7 @@ class IndemniteServiceTest extends TestCase
         BaremeLogement::create(['categorie_code' => 'A', 'enseignant' => true, 'en_classe' => false, 'montant' => 55000, 'actif' => true]);
         BaremeLogement::create(['categorie_code' => 'A', 'enseignant' => false, 'en_classe' => false, 'montant' => 50000, 'actif' => true]);
 
-        $service = new IndemniteService();
+        $service = app(IndemniteService::class);
 
         // Enseignant en classe → 69 300.
         $enClasse = Agent::create(['matricule' => 'L1', 'nom' => 'A', 'prenoms' => 'B', 'sexe' => 'M',
@@ -101,7 +101,7 @@ class IndemniteServiceTest extends TestCase
         $agent = Agent::create(['matricule' => 'Z1', 'nom' => 'A', 'prenoms' => 'B', 'sexe' => 'M', 'structure_id' => $service->id]);
 
         // La structure de l'agent n'a pas de zone, mais sa direction parente oui.
-        $this->assertSame('semi_urbaine', (new IndemniteService())->zonePour($agent->load('structure')));
+        $this->assertSame('semi_urbaine', (app(IndemniteService::class))->zonePour($agent->load('structure')));
     }
 
     #[Test]
@@ -110,6 +110,6 @@ class IndemniteServiceTest extends TestCase
         $central = Structure::create(['code' => 'SG', 'libelle' => 'Secrétariat général', 'type' => 'direction']);
         $agent = Agent::create(['matricule' => 'Z2', 'nom' => 'A', 'prenoms' => 'B', 'sexe' => 'M', 'structure_id' => $central->id]);
 
-        $this->assertSame('urbaine', (new IndemniteService())->zonePour($agent->load('structure')));
+        $this->assertSame('urbaine', (app(IndemniteService::class))->zonePour($agent->load('structure')));
     }
 }
