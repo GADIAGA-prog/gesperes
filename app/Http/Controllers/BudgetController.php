@@ -61,7 +61,7 @@ class BudgetController extends Controller
             'activites'  => $activites,
             'totaux'     => $totaux,
             'exercices'  => Activite::distinct()->orderByDesc('exercice')->pluck('exercice'),
-            'structures' => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            'structures' => Structure::directions()->orderBy('libelle')->pluck('libelle', 'id'),
             'programmes' => Programme::orderBy('libelle')->pluck('libelle', 'id'),
             'filtres'    => $request->only(['exercice', 'structure_id', 'programme_id']),
         ]);
@@ -208,7 +208,7 @@ class BudgetController extends Controller
         return view('budget.annexes', [
             'detail'     => $detail,
             'annees'     => $this->anneesBudget(),
-            'structures' => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            'structures' => Structure::directions()->orderBy('libelle')->pluck('libelle', 'id'),
             'programmes' => Programme::orderBy('code')->pluck('libelle', 'id'),
             'actions'    => Action::orderBy('code')->get(['id', 'code', 'libelle', 'programme_id']),
             'filtres'    => $request->only(['structure_id', 'programme_id', 'action_id']),
@@ -374,7 +374,7 @@ class BudgetController extends Controller
         return [
             'programmes' => Programme::orderBy('code')->get()->mapWithKeys(fn ($p) => [$p->id => $p->code . ' — ' . $p->libelle]),
             'actions'    => Action::orderBy('code')->get(['id', 'code', 'libelle', 'programme_id']),
-            'structures' => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            'structures' => Structure::directions()->orderBy('libelle')->pluck('libelle', 'id'),
         ];
     }
 

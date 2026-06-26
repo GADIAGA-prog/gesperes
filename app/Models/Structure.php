@@ -34,6 +34,13 @@ class Structure extends Model
         });
     }
 
+    /** Structures de niveau « direction » (régions, provinces, directions centrales, SG), actives. */
+    public function scopeDirections($query)
+    {
+        return $query->where('actif', true)
+            ->whereIn('type', [TypeStructure::MINISTERE->value, TypeStructure::DIRECTION->value]);
+    }
+
     public function parent() { return $this->belongsTo(Structure::class, 'parent_id'); }
     public function enfants() { return $this->hasMany(Structure::class, 'parent_id'); }
     public function region() { return $this->belongsTo(Region::class); }

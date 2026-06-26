@@ -49,7 +49,7 @@ class FichePosteController extends Controller
         return view('outils-grh.fiches-poste.index', [
             'fiches'    => $fiches,
             'familles'  => FamilleProfessionnelle::orderBy('libelle')->pluck('libelle', 'id'),
-            'structures' => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            'structures' => Structure::directions()->orderBy('libelle')->pluck('libelle', 'id'),
             'statuts'   => StatutFichePoste::cases(),
             'filtres'   => $request->only(['q', 'structure_id', 'famille_professionnelle_id', 'statut']),
         ]);
@@ -140,7 +140,7 @@ class FichePosteController extends Controller
         return view('outils-grh.fiches-poste.cartographie', [
             'groupes'    => $groupes,
             'total'      => $fiches->count(),
-            'structures' => Structure::orderBy('libelle')->pluck('libelle', 'id'),
+            'structures' => Structure::directions()->orderBy('libelle')->pluck('libelle', 'id'),
             'filtres'    => $request->only('structure_id'),
         ]);
     }
