@@ -343,12 +343,35 @@ php artisan tinker
 | Notifications e-mail (digest, en plus du in-app) | ✅ Complet |
 | Audit & traçabilité | ✅ Complet |
 | Profil utilisateur | ✅ Complet |
+| Espace agent (self-service : inscription, infos, actes, notifications) | ✅ Complet |
 
 ## 📋 Modules Phase 3 (GRH avancée) — Tous livrés ✅
 
 Les modules du kit de développement (V1 MVP + V2 GRH avancée) sont tous implémentés.
+
+**Espace agent (self-service)** — ✅ livré. Inscription **sans email** : l'agent prouve son
+identité par la concordance de 3 informations de son dossier — **matricule + téléphone +
+date de naissance** — puis définit immédiatement son mot de passe (activation instantanée).
+Il se **connecte ensuite avec son matricule** (`/espace-agent/connexion`) ; l'adresse e-mail
+du compte `User` est synthétique (`agent-{matricule}@gesperes.local`) et n'est jamais un
+identifiant de connexion. Espace cloisonné (`middleware agent.individuel` + périmètre par
+`agents.user_id`) : consultation des informations personnelles (lecture seule),
+téléchargement de ses actes, notifications des actes le concernant. Voir
+`app/Http/Controllers/EspaceAgent/` (Inscription, AgentSession, EspaceAgent),
+routes `espace-agent.*`, `app/Services/NotificationAgentService.php`. Le rôle
+`agent-individuel` n'a AUCUNE permission d'administration (cf. `RoleSeeder`).
+
+Interface **mobile-first / PWA installable sur Android** : layout dédié
+`layouts/agent.blade.php` (en-tête dégradé, barre d'onglets basse, bouton
+d'installation) + `layouts/agent-auth.blade.php`. PWA : `public/manifest.webmanifest`,
+`public/sw.js` (les pages authentifiées ne sont jamais mises en cache ; coquille
+hors-ligne `public/offline.html`), icônes `public/images/icons/*` régénérables via
+`php scripts/generer-icones-pwa.php`. Les invités de l'espace agent sont redirigés
+vers `espace-agent.connexion` via `redirectGuestsTo` (bootstrap/app.php).
+Empaquetage Play Store (TWA/Bubblewrap) : piste future, la base PWA est prête.
+
 Pistes d'évolution futures : intégration paie complète, workflow de validation
-multi-niveaux, portail agent (self-service), API mobile.
+multi-niveaux, éléments de salaire dans l'espace agent, API mobile.
 
 > Voir [docs/audit-kit-developpement.md](docs/audit-kit-developpement.md) pour l'audit complet kit vs réalisé.
 

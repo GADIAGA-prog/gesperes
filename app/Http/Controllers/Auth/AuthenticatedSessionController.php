@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\RoleName;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use Illuminate\Http\RedirectResponse;
@@ -21,7 +22,14 @@ class AuthenticatedSessionController extends Controller
         $request->authenticate();
         $request->session()->regenerate();
 
-        activity('auth')->causedBy(Auth::user())->log('Connexion');
+        $user = Auth::user();
+        activity('auth')->causedBy($user)->log('Connexion');
+
+        // Un agent individuel (self-service) rejoint son espace personnel ;
+        // le personnel d'administration rejoint le tableau de bord RH.
+        if ($user->hasRole(RoleName::AGENT_INDIVIDUEL->value)) {
+            return redirect()->intended(route('espace-agent.dashboard'));
+        }
 
         return redirect()->intended(route('dashboard'));
     }

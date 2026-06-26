@@ -6,6 +6,7 @@ use App\Enums\TypeDocument;
 use App\Http\Requests\StoreDocumentRequest;
 use App\Models\Agent;
 use App\Models\Document;
+use App\Services\NotificationAgentService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -52,12 +53,12 @@ class DocumentController extends Controller
         ]);
     }
 
-    public function store(StoreDocumentRequest $request, Agent $agent): RedirectResponse
+    public function store(StoreDocumentRequest $request, Agent $agent, NotificationAgentService $notifications): RedirectResponse
     {
         foreach ($request->file('fichiers') as $fichier) {
             $chemin = $fichier->store("agents/{$agent->id}", 'documents');
 
-            $agent->documents()->create([
+            $document = $agent->documents()->create([
                 'carriere_evenement_id' => $request->input('carriere_evenement_id'),
                 'type_document'   => $request->type_document,
                 'reference'       => $request->reference,
@@ -71,6 +72,9 @@ class DocumentController extends Controller
                 'commentaire'     => $request->commentaire,
                 'created_by'      => $request->user()->id,
             ]);
+
+            // Notifie l'agent (espace self-service) si son dossier porte un compte.
+            $notifications->notifierNouvelActe($document);
         }
 
         $n = count($request->file('fichiers'));
