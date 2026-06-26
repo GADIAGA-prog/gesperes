@@ -24,11 +24,20 @@ class RattacherStructuresGeo extends Command
 
     protected $description = 'Renseigne region_id/province_id/localite_id des structures par correspondance de libellé.';
 
+    /** Variantes orthographiques de libellés de structures → nom du référentiel. */
+    private const ALIAS = [
+        'komandjari' => 'komandjoari',
+        'kossin' => 'kossi',
+    ];
+
     public function handle(): int
     {
         $dry = (bool) $this->option('dry-run');
 
-        $norm = fn ($s) => (string) Str::of((string) $s)->ascii()->lower()->replaceMatches('/[^a-z0-9]+/', ' ')->squish();
+        $norm = function ($s) {
+            $k = (string) Str::of((string) $s)->ascii()->lower()->replaceMatches('/[^a-z0-9]+/', ' ')->squish();
+            return self::ALIAS[$k] ?? $k;
+        };
 
         $regions   = Region::get(['id', 'libelle'])->keyBy(fn ($r) => $norm($r->libelle));
         $provinces = Province::get(['id', 'libelle', 'region_id'])->keyBy(fn ($p) => $norm($p->libelle));

@@ -27,6 +27,7 @@ class StructureController extends Controller
 
         $structures = Structure::with('parent')
             ->withCount('agents')
+            ->where('actif', true)
             ->orderBy('type')
             ->orderBy('libelle')
             ->get();
