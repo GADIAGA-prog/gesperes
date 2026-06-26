@@ -39,7 +39,7 @@ class ReconstruireOrganigramme extends Command
     ];
 
     private bool $dry;
-    private array $stats = ['regions' => 0, 'provinces' => 0, 'communes' => 0, 'agents_rehomes' => 0, 'noeuds_desactives' => 0];
+    private array $stats = ['regions' => 0, 'provinces' => 0, 'provinces_type' => 0, 'communes' => 0, 'communes_type' => 0, 'agents_rehomes' => 0, 'noeuds_desactives' => 0];
 
     public function handle(): int
     {
@@ -136,11 +136,21 @@ class ReconstruireOrganigramme extends Command
             ->where('actif', true)->orderBy('id')->get();
 
         foreach ($provinces as $p) {
+            $modif = false;
             $region = $regionNodes[$p->region_id] ?? null;
             if ($region && $p->parent_id !== $region->id) {
                 $p->parent_id = $region->id;
-                $this->sauver($p);
+                $modif = true;
                 $this->stats['provinces']++;
+            }
+            // Une province est une DIRECTION (provinciale), pas un service.
+            if ($p->type !== TypeStructure::DIRECTION) {
+                $p->type = TypeStructure::DIRECTION->value;
+                $modif = true;
+                $this->stats['provinces_type']++;
+            }
+            if ($modif) {
+                $this->sauver($p);
             }
             // 1 nœud province par province_id (le premier rencontré fait foi).
             $nodes[$p->province_id] ??= $p;
@@ -148,17 +158,27 @@ class ReconstruireOrganigramme extends Command
         return $nodes;
     }
 
-    /** Communes/établissements (localite_id) → sous leur province. */
+    /** Communes/établissements (localite_id) → sous leur province ; type Service. */
     private function rattacherCommunes(array $regionNodes, array $provinceNodes): void
     {
         Structure::whereNotNull('localite_id')->where('actif', true)->orderBy('id')
             ->chunkById(500, function ($lot) use ($regionNodes, $provinceNodes) {
                 foreach ($lot as $c) {
+                    $modif = false;
                     $cible = $provinceNodes[$c->province_id] ?? ($regionNodes[$c->region_id] ?? null);
                     if ($cible && $c->id !== $cible->id && $c->parent_id !== $cible->id) {
                         $c->parent_id = $cible->id;
-                        $this->sauver($c);
+                        $modif = true;
                         $this->stats['communes']++;
+                    }
+                    // Une commune/établissement est un SERVICE.
+                    if ($c->type !== TypeStructure::SERVICE) {
+                        $c->type = TypeStructure::SERVICE->value;
+                        $modif = true;
+                        $this->stats['communes_type']++;
+                    }
+                    if ($modif) {
+                        $this->sauver($c);
                     }
                 }
             });
@@ -177,7 +197,9 @@ class ReconstruireOrganigramme extends Command
         $this->table(['Action', 'Nombre'], [
             ['Nœuds Région créés', $this->stats['regions']],
             ['Provinces rattachées à leur région', $this->stats['provinces']],
+            ['Provinces passées en type Direction', $this->stats['provinces_type']],
             ['Communes/établissements rattachés à leur province', $this->stats['communes']],
+            ['Communes passées en type Service', $this->stats['communes_type']],
             ['Agents réaffectés (ex-directions 17)', $this->stats['agents_rehomes']],
             ['Nœuds « nouveau découpage » désactivés', $this->stats['noeuds_desactives']],
         ]);
