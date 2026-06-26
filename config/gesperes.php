@@ -63,4 +63,14 @@ return [
             explode(',', (string) env('GESPERES_ALERTES_EMAILS', ''))
         ))),
     ],
+
+    // Application Android (TWA — Trusted Web Activity, publiée sur le Play Store).
+    // Le lien app ↔ site (Digital Asset Links) est servi sur
+    // /.well-known/assetlinks.json à partir de ces valeurs.
+    // L'empreinte SHA-256 provient de la clé de signature (Bubblewrap/PWABuilder
+    // ou « App Signing » du Play Console) — renseignez-la dans .env une fois connue.
+    'android' => [
+        'package'           => env('ANDROID_PACKAGE_NAME', 'bf.gov.mesfpt.gesperes'),
+        'sha256_fingerprint' => env('ANDROID_SHA256_FINGERPRINT'),
+    ],
 ];

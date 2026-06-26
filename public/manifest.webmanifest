@@ -1,4 +1,5 @@
 {
+    "id": "/espace-agent",
     "name": "GesPerES — Espace agent",
     "short_name": "GesPerES",
     "description": "Espace personnel des agents du MESFPTT : informations, actes et notifications.",
@@ -7,6 +8,7 @@
     "start_url": "/espace-agent",
     "scope": "/espace-agent",
     "display": "standalone",
+    "prefer_related_applications": false,
     "orientation": "portrait",
     "background_color": "#0f172a",
     "theme_color": "#1e40af",
