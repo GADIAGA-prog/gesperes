@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Enums\Sexe;
 use App\Enums\TypeStructure;
 use App\Models\Agent;
 use App\Models\Fonction;
@@ -10,17 +9,18 @@ use App\Models\Structure;
 use Illuminate\Support\Str;
 
 /**
- * Logique métier des structures : notamment la nomination automatique du
- * responsable. Lorsqu'on désigne un responsable de structure/service, l'agent
- * est d'office affecté à la structure et nommé selon le type de structure et
- * son genre (Directeur/Directrice, Chef/Cheffe de service).
+ * Logique métier des structures : nomination automatique du responsable.
+ *
+ * Dès qu'un responsable est désigné pour une structure, l'agent est d'office
+ * affecté à la structure et nommé à la fonction du décret 2014-427 correspondant
+ * au niveau de la structure (l'indemnité de responsabilité suit la fonction) :
+ *   - Secrétariat général → Secrétaire général          (60 000)
+ *   - Cabinet             → Directeur de cabinet         (80 000)
+ *   - Direction (région, province, direction centrale) → Directeur central (18 500)
+ *   - Service / commune   → Chef de service nommé par arrêté (10 500)
  */
 class StructureService
 {
-    /**
-     * Affecte le responsable à sa structure et le nomme (fonction genrée).
-     * Sans responsable, ne fait rien.
-     */
     public function synchroniserResponsable(Structure $structure): void
     {
         if (! $structure->responsable_agent_id) {
@@ -32,7 +32,7 @@ class StructureService
             return;
         }
 
-        $fonction = $this->fonctionResponsable($structure->type, $agent->sexe);
+        $fonction = $this->fonctionResponsable($structure);
 
         // Nomination + affectation d'office.
         $agent->fonction_id = $fonction->id;
@@ -56,36 +56,36 @@ class StructureService
         $agent->save();
     }
 
-    /**
-     * Fonction (genrée) du responsable selon le type de structure :
-     *  - Service              → Chef de service / Cheffe de service
-     *  - autres (Direction…)  → Directeur / Directrice
-     *
-     * La variante féminine est créée à la volée en héritant de l'indemnité de
-     * responsabilité de la fonction de base, pour ne pas perdre la prime.
-     */
-    private function fonctionResponsable(?TypeStructure $type, ?Sexe $sexe): Fonction
+    /** Fonction (décret 2014-427) du responsable selon la structure. */
+    private function fonctionResponsable(Structure $structure): Fonction
     {
-        $feminin = $sexe === Sexe::F;
+        [$libelle, $montantDefaut] = $this->cibleFonction($structure);
 
-        [$baseLibelle, $libelleGenre] = $type === TypeStructure::SERVICE
-            ? ['Chef de service', $feminin ? 'Cheffe de service' : 'Chef de service']
-            : ['Directeur', $feminin ? 'Directrice' : 'Directeur'];
-
-        $base = Fonction::where('libelle', $baseLibelle)->first();
-
-        if ($libelleGenre === $baseLibelle && $base) {
-            return $base;
+        $fonction = Fonction::whereRaw('LOWER(libelle) = ?', [mb_strtolower($libelle)])->first();
+        if ($fonction) {
+            return $fonction;
         }
 
-        return Fonction::firstOrCreate(
-            ['libelle' => $libelleGenre],
-            [
-                'code'  => $this->code($libelleGenre),
-                'indemnite_responsabilite' => $base?->indemnite_responsabilite ?? 0,
-                'actif' => true,
-            ],
-        );
+        // La fonction du décret devrait exister (seeder) ; sinon on la crée avec le montant officiel.
+        return Fonction::create([
+            'code' => $this->code($libelle),
+            'libelle' => $libelle,
+            'indemnite_responsabilite' => $montantDefaut,
+            'actif' => true,
+        ]);
+    }
+
+    /** @return array{0:string,1:int} libellé de fonction, montant par défaut (décret). */
+    private function cibleFonction(Structure $structure): array
+    {
+        $nom = (string) Str::of($structure->libelle)->ascii()->lower()->squish();
+
+        return match (true) {
+            $nom === 'cabinet'              => ['Directeur de cabinet', 80000],
+            $nom === 'secretariat general'  => ['Secrétaire général', 60000],
+            $structure->type === TypeStructure::SERVICE => ['Chef de service nommé par arrêté', 10500],
+            default                         => ['Directeur central', 18500], // Direction (région, province, centrale)
+        };
     }
 
     private function code(string $libelle): string

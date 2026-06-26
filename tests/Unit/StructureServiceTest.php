@@ -15,52 +15,63 @@ class StructureServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function agent(string $sexe): Agent
+    private function agent(): Agent
     {
-        return Agent::create(['matricule' => 'R' . $sexe, 'nom' => 'NOM', 'prenoms' => 'Prenom', 'sexe' => $sexe]);
+        return Agent::create(['matricule' => 'R1', 'nom' => 'NOM', 'prenoms' => 'Prenom', 'sexe' => 'M']);
     }
 
-    #[Test]
-    public function responsable_femme_d_un_service_est_affecte_et_nomme_cheffe(): void
+    /** Nomme le responsable et renvoie sa fonction. */
+    private function nommer(array $structureAttrs): Fonction
     {
-        Fonction::create(['code' => 'CS', 'libelle' => 'Chef de service', 'indemnite_responsabilite' => 30000, 'actif' => true]);
-        $agent = $this->agent('F');
-        $structure = Structure::create(['code' => 'SVC', 'libelle' => 'Service X', 'type' => TypeStructure::SERVICE->value, 'responsable_agent_id' => $agent->id]);
-
+        $agent = $this->agent();
+        $structure = Structure::create($structureAttrs + ['responsable_agent_id' => $agent->id]);
         app(StructureService::class)->synchroniserResponsable($structure);
 
         $agent->refresh();
         $this->assertSame($structure->id, $agent->structure_id, 'affecté à la structure');
-        $this->assertSame('Cheffe de service', $agent->fonction?->libelle);
-        // La variante féminine hérite de l'indemnité de responsabilité.
-        $this->assertEquals(30000, $agent->fonction?->indemnite_responsabilite);
+
+        return $agent->fonction;
     }
 
     #[Test]
-    public function responsable_homme_d_une_direction_est_nomme_directeur(): void
+    public function responsable_de_service_est_chef_de_service_nomme_par_arrete(): void
     {
-        Fonction::create(['code' => 'DIR2', 'libelle' => 'Directeur', 'indemnite_responsabilite' => 50000, 'actif' => true]);
-        $agent = $this->agent('M');
-        $structure = Structure::create(['code' => 'DIRX', 'libelle' => 'Direction X', 'type' => TypeStructure::DIRECTION->value, 'responsable_agent_id' => $agent->id]);
-
-        app(StructureService::class)->synchroniserResponsable($structure);
-
-        $agent->refresh();
-        $this->assertSame($structure->id, $agent->structure_id);
-        $this->assertSame('Directeur', $agent->fonction?->libelle);
+        $f = $this->nommer(['code' => 'SVC', 'libelle' => 'Service X', 'type' => TypeStructure::SERVICE->value]);
+        $this->assertSame('Chef de service nommé par arrêté', $f->libelle);
+        $this->assertEquals(10500, $f->indemnite_responsabilite);
     }
 
     #[Test]
-    public function responsable_femme_d_une_direction_est_nommee_directrice(): void
+    public function responsable_de_direction_est_directeur_central(): void
     {
-        Fonction::create(['code' => 'DIR2', 'libelle' => 'Directeur', 'indemnite_responsabilite' => 50000, 'actif' => true]);
-        $agent = $this->agent('F');
-        $structure = Structure::create(['code' => 'DIRY', 'libelle' => 'Direction Y', 'type' => TypeStructure::DIRECTION->value, 'responsable_agent_id' => $agent->id]);
+        $f = $this->nommer(['code' => 'DIRX', 'libelle' => 'Direction X', 'type' => TypeStructure::DIRECTION->value]);
+        $this->assertSame('Directeur central', $f->libelle);
+        $this->assertEquals(18500, $f->indemnite_responsabilite);
+    }
 
-        app(StructureService::class)->synchroniserResponsable($structure);
+    #[Test]
+    public function responsable_du_cabinet_est_directeur_de_cabinet(): void
+    {
+        $f = $this->nommer(['code' => 'CAB', 'libelle' => 'Cabinet', 'type' => TypeStructure::DIRECTION->value]);
+        $this->assertSame('Directeur de cabinet', $f->libelle);
+        $this->assertEquals(80000, $f->indemnite_responsabilite);
+    }
 
-        $this->assertSame('Directrice', $agent->refresh()->fonction?->libelle);
-        $this->assertEquals(50000, $agent->fonction?->indemnite_responsabilite);
+    #[Test]
+    public function responsable_du_secretariat_general_est_secretaire_general(): void
+    {
+        $f = $this->nommer(['code' => 'SG', 'libelle' => 'Secrétariat général', 'type' => TypeStructure::DIRECTION->value]);
+        $this->assertSame('Secrétaire général', $f->libelle);
+        $this->assertEquals(60000, $f->indemnite_responsabilite);
+    }
+
+    #[Test]
+    public function utilise_la_fonction_existante_du_decret_si_presente(): void
+    {
+        // Si la fonction existe déjà (seeder décret) avec un montant officiel, on la réutilise.
+        Fonction::create(['code' => 'SGEXIST', 'libelle' => 'Secrétaire général', 'indemnite_responsabilite' => 60000, 'actif' => true]);
+        $f = $this->nommer(['code' => 'SG2', 'libelle' => 'Secrétariat général', 'type' => TypeStructure::DIRECTION->value]);
+        $this->assertSame('SGEXIST', $f->code);
     }
 
     #[Test]
