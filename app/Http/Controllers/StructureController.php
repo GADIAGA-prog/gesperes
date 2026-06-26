@@ -21,7 +21,7 @@ class StructureController extends Controller
 {
     public function __construct(private StructureService $service) {}
 
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('structures.view');
 
@@ -31,12 +31,23 @@ class StructureController extends Controller
             ->orderBy('libelle')
             ->get();
 
-        // Construction de l'arborescence (racines = sans parent)
-        $racines = $structures->whereNull('parent_id');
+        // Recherche : libellé, code ou responsable → liste plate avec le chemin complet.
+        $q = trim((string) $request->input('q'));
+        $resultats = $q === '' ? null : Structure::with(['parent.parent.parent.parent', 'responsable'])
+            ->withCount('agents')
+            ->where(fn ($w) => $w
+                ->where('libelle', 'like', "%{$q}%")
+                ->orWhere('code', 'like', "%{$q}%")
+                ->orWhereHas('responsable', fn ($r) => $r->recherche($q)))
+            ->orderBy('libelle')
+            ->limit(100)
+            ->get();
 
         return view('structures.index', [
             'structures' => $structures,
-            'racines'    => $racines,
+            'racines'    => $structures->whereNull('parent_id'), // arborescence (racines = sans parent)
+            'resultats'  => $resultats,
+            'q'          => $q,
         ]);
     }
 
