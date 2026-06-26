@@ -17,13 +17,13 @@
 
 <form method="GET" class="card mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
     <input type="text" name="q" value="{{ $filtres['q'] ?? '' }}" placeholder="Intitulé ou code…" class="input">
-    <select name="structure_id" class="input">
+    <select name="structure_id" class="input" data-recherche>
         <option value="">Toutes les structures</option>
         @foreach ($structures as $id => $lib)
             <option value="{{ $id }}" {{ (string) ($filtres['structure_id'] ?? '') === (string) $id ? 'selected' : '' }}>{{ $lib }}</option>
         @endforeach
     </select>
-    <select name="famille_professionnelle_id" class="input">
+    <select name="famille_professionnelle_id" class="input" data-recherche>
         <option value="">Toutes les familles pro.</option>
         @foreach ($familles as $id => $lib)
             <option value="{{ $id }}" {{ (string) ($filtres['famille_professionnelle_id'] ?? '') === (string) $id ? 'selected' : '' }}>{{ $lib }}</option>
@@ -39,6 +39,7 @@
         <button type="submit" class="btn btn-primary">Filtrer</button>
     </div>
 </form>
+@include('partials.select-recherche')
 
 <div class="card overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">

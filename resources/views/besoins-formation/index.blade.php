@@ -24,12 +24,13 @@
             <option value="{{ $v }}" {{ ($filtres['statut']??'')===$v?'selected':'' }}>{{ $l }}</option>
         @endforeach
     </select>
-    <select name="structure_id" class="input">
+    <select name="structure_id" class="input" data-recherche>
         <option value="">Toutes structures</option>
         @foreach($structures as $id=>$lib)<option value="{{ $id }}" {{ (string)($filtres['structure_id']??'')===(string)$id?'selected':'' }}>{{ $lib }}</option>@endforeach
     </select>
     <button class="btn btn-primary">Filtrer</button>
 </form>
+@include('partials.select-recherche')
 
 {{-- Consolidation : besoins les plus exprimés (priorisation pour le plan) --}}
 @if($consolidation->isNotEmpty())

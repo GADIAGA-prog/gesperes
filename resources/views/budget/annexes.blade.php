@@ -22,13 +22,13 @@
 </div>
 
 <form method="GET" class="card mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
-    <select name="programme_id" class="input">
+    <select name="programme_id" class="input" data-recherche>
         <option value="">Tous les programmes</option>
         @foreach ($programmes as $id => $libelle)
             <option value="{{ $id }}" {{ (string) ($filtres['programme_id'] ?? '') === (string) $id ? 'selected' : '' }}>{{ $libelle }}</option>
         @endforeach
     </select>
-    <select name="structure_id" class="input">
+    <select name="structure_id" class="input" data-recherche>
         <option value="">Toutes les structures</option>
         @foreach ($structures as $id => $libelle)
             <option value="{{ $id }}" {{ (string) ($filtres['structure_id'] ?? '') === (string) $id ? 'selected' : '' }}>{{ $libelle }}</option>
@@ -41,6 +41,7 @@
         <a href="{{ route('budget.annexes') }}" class="btn btn-secondary">Réinit.</a>
     </div>
 </form>
+@include('partials.select-recherche')
 
 @if (empty($detail))
     <div class="card text-center text-gray-400 py-10">Sélectionnez un programme ou une structure pour générer le tableau (une section par programme et structure).</div>

@@ -12,19 +12,19 @@
     <input type="hidden" name="tri" value="{{ request('tri') }}">
     <input type="hidden" name="sens" value="{{ request('sens') }}">
     <input type="text" name="q" value="{{ $filtres['q'] ?? '' }}" placeholder="Matricule, nom, prénoms, emploi, structure…" class="input">
-    <select name="structure_id" class="input">
+    <select name="structure_id" class="input" data-recherche>
         <option value="">Toutes les structures</option>
         @foreach ($structures as $id => $libelle)
             <option value="{{ $id }}" {{ (string) ($filtres['structure_id'] ?? '') === (string) $id ? 'selected' : '' }}>{{ $libelle }}</option>
         @endforeach
     </select>
-    <select name="emploi_id" class="input">
+    <select name="emploi_id" class="input" data-recherche>
         <option value="">Tous les emplois</option>
         @foreach ($emplois as $id => $libelle)
             <option value="{{ $id }}" {{ (string) ($filtres['emploi_id'] ?? '') === (string) $id ? 'selected' : '' }}>{{ $libelle }}</option>
         @endforeach
     </select>
-    <select name="categorie_id" class="input">
+    <select name="categorie_id" class="input" data-recherche>
         <option value="">Toutes catégories</option>
         @foreach ($categories as $id => $code)
             <option value="{{ $id }}" {{ (string) ($filtres['categorie_id'] ?? '') === (string) $id ? 'selected' : '' }}>{{ $code }}</option>
@@ -35,6 +35,7 @@
         <a href="{{ route('budget.personnel', ['mode' => $mode]) }}" class="btn btn-secondary">Réinitialiser</a>
     </div>
 </form>
+@include('partials.select-recherche')
 
 {{-- Bascule du mode d'affichage --}}
 <div class="flex flex-wrap gap-2 mb-4">

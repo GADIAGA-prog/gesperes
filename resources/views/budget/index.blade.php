@@ -33,13 +33,14 @@
 {{-- Filtres --}}
 <form method="GET" class="card mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
     <x-form.select name="exercice" label="Exercice" :options="$exercices->mapWithKeys(fn($e)=>[$e=>$e])" :selected="$filtres['exercice'] ?? null" placeholder="Tous" />
-    <x-form.select name="programme_id" label="Programme" :options="$programmes" :selected="$filtres['programme_id'] ?? null" placeholder="Tous" />
-    <x-form.select name="structure_id" label="Structure" :options="$structures" :selected="$filtres['structure_id'] ?? null" placeholder="Toutes" />
+    <x-form.select name="programme_id" label="Programme" :options="$programmes" :selected="$filtres['programme_id'] ?? null" placeholder="Tous" data-recherche />
+    <x-form.select name="structure_id" label="Structure" :options="$structures" :selected="$filtres['structure_id'] ?? null" placeholder="Toutes" data-recherche />
     <div class="flex items-end gap-2">
         <button type="submit" class="btn btn-primary">Filtrer</button>
         <a href="{{ route('budget.index') }}" class="btn btn-secondary">Réinit.</a>
     </div>
 </form>
+@include('partials.select-recherche')
 
 <div class="card overflow-x-auto">
     <table class="min-w-full divide-y divide-gray-200">

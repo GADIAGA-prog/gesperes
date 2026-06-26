@@ -11,7 +11,7 @@
 </div>
 
 <form method="GET" class="card mb-4 grid grid-cols-1 sm:grid-cols-4 gap-3">
-    <select name="structure_id" class="input sm:col-span-3">
+    <select name="structure_id" class="input sm:col-span-3" data-recherche>
         <option value="">Toutes les structures</option>
         @foreach ($structures as $id => $libelle)
             <option value="{{ $id }}" {{ (string) ($filtres['structure_id'] ?? '') === (string) $id ? 'selected' : '' }}>{{ $libelle }}</option>
@@ -19,6 +19,7 @@
     </select>
     <button type="submit" class="btn btn-primary">Filtrer</button>
 </form>
+@include('partials.select-recherche')
 
 @forelse ($groupes as $chemin => $fiches)
     <div class="card mb-4">
