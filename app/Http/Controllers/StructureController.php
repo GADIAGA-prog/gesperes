@@ -11,6 +11,7 @@ use App\Models\Localite;
 use App\Models\Province;
 use App\Models\Region;
 use App\Models\Structure;
+use App\Services\StructureService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ use Illuminate\View\View;
 
 class StructureController extends Controller
 {
+    public function __construct(private StructureService $service) {}
+
     public function index(): View
     {
         $this->authorize('structures.view');
@@ -65,6 +68,7 @@ class StructureController extends Controller
     public function store(StoreStructureRequest $request): RedirectResponse
     {
         $structure = Structure::create($request->validated());
+        $this->service->synchroniserResponsable($structure);
 
         return redirect()->route('structures.index')
             ->with('success', "Structure « {$structure->libelle} » créée.");
@@ -88,6 +92,7 @@ class StructureController extends Controller
     public function update(UpdateStructureRequest $request, Structure $structure): RedirectResponse
     {
         $structure->update($request->validated());
+        $this->service->synchroniserResponsable($structure);
 
         return redirect()->route('structures.index')
             ->with('success', "Structure « {$structure->libelle} » mise à jour.");
