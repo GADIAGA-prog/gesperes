@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Agent;
 use App\Models\EnveloppePersonnel;
 use App\Models\Structure;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -68,34 +69,32 @@ class VentilationService
             ->selectRaw('ac.id aid, ac.code acode, ac.libelle alib, pr.code pcode, pr.libelle plib, SUM(i.valeur) sind, SUM(COALESCE(f.indemnite_responsabilite,0)) sresp')
             ->get();
 
-        // Indemnités (mensuelles) par action et par code.
-        $indemnites = $appliquer(DB::table('agent_indemnites as ai')
+        // Allocation familiale (666, mensuelle) par action : non barème, valeur réelle.
+        $allocations = $appliquer(DB::table('agent_indemnites as ai')
             ->join('agents as ag', 'ag.id', '=', 'ai.agent_id')
             ->join('structures as s', 's.id', '=', 'ag.structure_id')
             ->join('actions as ac', 'ac.id', '=', 's.action_id')
             ->join('programmes as pr', 'pr.id', '=', 'ac.programme_id')
             ->join('indemnites as im', 'im.id', '=', 'ai.indemnite_id')
+            ->where('im.code', 'ALLOC')
             ->whereNull('ag.deleted_at'))
-            ->groupBy('ac.id', 'im.code')
-            ->selectRaw('ac.id aid, im.code code, SUM(ai.montant) total')
-            ->get()
-            ->groupBy('aid');
+            ->groupBy('ac.id')
+            ->selectRaw('ac.id aid, SUM(ai.montant) total')
+            ->get()->keyBy('aid');
+
+        // Indemnités barème (663 : logement, technicité, astreinte, spécifique)
+        // calculées PAR LES RÈGLES et agrégées par action (mensuel).
+        $baremeParAction = $this->indemnitesBaremeParAction($filtres);
 
         $masse = [];
         foreach ($soldes as $r) {
             $soldeAnnuel = (float) $r->sind * $point; // indice × point = solde annuel
 
-            // 663 = résidence + responsabilité (fonction, annualisée) + indemnités.
-            $primes663 = $soldeAnnuel * $residence + (float) $r->sresp * 12;
-            $p666 = 0.0;
-            foreach ($indemnites->get($r->aid, collect()) as $im) {
-                $annuel = (float) $im->total * 12;
-                if (in_array($im->code, self::CODES_663, true)) {
-                    $primes663 += $annuel;
-                } elseif ($im->code === 'ALLOC') {
-                    $p666 += $annuel;
-                }
-            }
+            // 663 = résidence + responsabilité (fonction) + indemnités barème, annualisé.
+            $primes663 = $soldeAnnuel * $residence
+                + (float) $r->sresp * 12
+                + (float) ($baremeParAction[$r->aid] ?? 0) * 12;
+            $p666 = (float) (optional($allocations->get($r->aid))->total ?? 0) * 12;
 
             $masse[$r->aid] = [
                 'programme_code'    => $r->pcode,
@@ -110,6 +109,55 @@ class VentilationService
         }
 
         return $masse;
+    }
+
+    /**
+     * Indemnités barème (logement + technicité + astreinte + spécifique) calculées
+     * PAR LES RÈGLES et agrégées par action (montant mensuel). Astreinte/spécifique
+     * retombent sur le montant réel attribué quand la zone est indéterminée.
+     *
+     * @return array<int, float>  action_id => total mensuel
+     */
+    private function indemnitesBaremeParAction(array $filtres): array
+    {
+        // Coûteux (boucle par agent sur tout l'effectif) : mémoïsé 30 min, car la
+        // ventilation est une projection pluriannuelle qui évolue rarement.
+        $cle = 'ventilation.indem_bareme.' . md5(json_encode($filtres));
+
+        return Cache::remember($cle, now()->addMinutes(30), fn () => $this->calculerIndemnitesBaremeParAction($filtres));
+    }
+
+    /** @return array<int, float> action_id => total mensuel */
+    private function calculerIndemnitesBaremeParAction(array $filtres): array
+    {
+        $acc = [];
+
+        Agent::query()
+            ->with(['categorie', 'emploi', 'echelle', 'localite.zone',
+                    'structure.parent.parent.parent.parent', 'indemnites.indemnite'])
+            ->whereHas('structure.action')
+            ->when($filtres['structure_id'] ?? null, fn ($q, $v) => $q->whereIn('structure_id', Structure::sousArbreIds($v)))
+            ->when($filtres['action_id'] ?? null, fn ($q, $v) => $q->whereHas('structure', fn ($q) => $q->where('action_id', $v)))
+            ->when($filtres['programme_id'] ?? null, fn ($q, $v) => $q->whereHas('structure.action', fn ($q) => $q->where('programme_id', $v)))
+            ->chunk(500, function ($lot) use (&$acc) {
+                foreach ($lot as $a) {
+                    $aid = $a->structure?->action_id;
+                    if (! $aid) {
+                        continue;
+                    }
+                    $stored = $a->relationLoaded('indemnites')
+                        ? $a->indemnites->keyBy(fn ($x) => $x->indemnite?->code) : collect();
+                    $m = fn (string $c) => (float) optional($stored->get($c))->montant;
+
+                    $acc[$aid] = ($acc[$aid] ?? 0)
+                        + $this->indemnites->logement($a)
+                        + $this->indemnites->technicite($a)
+                        + ($this->indemnites->astreinte($a) ?? $m('ASTR'))
+                        + ($this->indemnites->specifique($a) ?? $m('SPEC'));
+                }
+            });
+
+        return $acc;
     }
 
     /**
