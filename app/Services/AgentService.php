@@ -60,6 +60,11 @@ class AgentService
         // R9 : allocation familiale calculée selon le nombre d'enfants
         $data['allocation_familiale'] = $this->allocation->calculer((int) ($data['nombre_enfants'] ?? 0));
 
+        // Personnes à charge : par défaut le nombre d'enfants (sinon valeur saisie).
+        if (! isset($data['personnes_a_charge']) || $data['personnes_a_charge'] === '' || $data['personnes_a_charge'] === null) {
+            $data['personnes_a_charge'] = (int) ($data['nombre_enfants'] ?? 0);
+        }
+
         // Affectation géographique : déduite de la structure d'affectation choisie
         // (région/province/commune ne sont plus saisies directement dans le formulaire agent).
         // On n'écrase pas une valeur existante lorsque la structure ne renseigne pas le niveau.

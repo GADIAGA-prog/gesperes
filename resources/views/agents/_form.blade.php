@@ -80,10 +80,15 @@
     </div>
 
     {{-- Famille --}}
-    <div x-show="tab === 'famille'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    @php $chargeManuelle = $a && (int) ($a->personnes_a_charge ?? 0) !== (int) ($a->nombre_enfants ?? 0); @endphp
+    <div x-show="tab === 'famille'" x-cloak class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+         x-data="{ chargeManuelle: {{ $chargeManuelle ? 'true' : 'false' }} }">
         <x-form.select name="situation_matrimoniale" label="Situation matrimoniale" :options="$situations" :selected="$a?->situation_matrimoniale?->value" />
-        <x-form.input name="nombre_enfants" label="Nombre d'enfants" type="number" :value="$a?->nombre_enfants ?? 0" />
-        <x-form.input name="personnes_a_charge" label="Personnes à charge" type="number" :value="$a?->personnes_a_charge ?? 0" />
+        {{-- Personnes à charge = nombre d'enfants par défaut ; saisie libre si modifiée manuellement. --}}
+        <x-form.input name="nombre_enfants" label="Nombre d'enfants" type="number" min="0" :value="$a?->nombre_enfants ?? 0"
+                      x-on:input="if (! chargeManuelle) $refs.charge.value = $event.target.value" />
+        <x-form.input name="personnes_a_charge" label="Personnes à charge (par défaut : nombre d'enfants)" type="number" min="0"
+                      :value="$a?->personnes_a_charge ?? 0" x-ref="charge" x-on:input="chargeManuelle = true" />
         <x-form.input name="distinction_honorifique" label="Distinction honorifique" :value="$a?->distinction_honorifique" />
         <x-form.textarea name="observations" label="Observations" :value="$a?->observations" class="sm:col-span-2 lg:col-span-3" />
     </div>
