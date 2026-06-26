@@ -1,0 +1,198 @@
+fonction,indemnite_responsabilite
+Administrateur des Secrétariats permanents,15000
+Aide de camp du Premier Ministre,32500
+Aide de camp du Président du Faso,35000
+Agent comptable central du trésor,120000
+Agent judiciaire adjoint du Trésor,40000
+Agent judiciaire du Trésor,40000
+Assistant du Directeur de cabinet,10500
+Attaché de mission du premier ministère,33000
+"Attaché de mission, attaché de presse et chef",15000
+Caissier de la paierie générale,35000
+Caissier principal,20000
+Caissier secondaire,14000
+Autres caissiers,35000
+Caissier des trésoreries principales,25000
+Caissier des trésoreries régionales,30000
+Chef d'établissement CFJA,6500
+Directeur d'école primaire ou,6500
+Inspecteur de la garde de sécurité pénitentiaire,6500
+Receveur des créances diverses,25000
+Censeur d'établissement secondaire,10500
+Chargé d’Etudes nommé par décret,15000
+Chargé de mission des ministères et,21500
+Chargé de mission (CSC),21500
+Chef d'antenne régional (Présidence du Faso),15000
+Chef de Bureau MICA,10500
+Chef de cabinet ministre délégué,10500
+Chef de cabinet de gouverneur,10500
+Chef de cabinet des ministères et institutions,15000
+Chef de cabinet du Premier Ministre,15000
+Chef de cabinet du Président du Faso,17500
+Chef de département (CES),15000
+Chef de secrétariat de parquet des hautes,15000
+Chef de sécurité du Premier Ministre,33000
+Chef de service nommé par arrêté,10500
+Chef de service nommé par décision,6500
+"Chef de division fiscale, chef de brigade de",10500
+Chef de département de la Présidence du Faso,40000
+Chefs des travaux des lycées et des collèges,10500
+Conseiller technique du Premier Ministre,40000
+Conseiller technique de gouverneur,18500
+Contrôleur d'Etat,285000
+Contrôleur financier central (DGCMEF),68000
+Contrôleur financier des ministères et,20000
+Contrôleur financier régional (DR-CMEF),38000
+Contrôleur financier suppléant (DGA-CMEF),47500
+"Directeur central (DRH, DCPM…)",18500
+Directeur Centre Pénitentiaire Agricole de,18500
+Directeur de Cabinet des Présidents,67500
+Directeur de cabinet du Premier Ministre,82500
+Directeur de cabinet du Président du Faso,85000
+Directeur de la communication du Premier,18500
+"Directeur des marchés publics, PRM",15000
+Directeur général,28000
+Directeur Général de service ayant la qualité,88000
+Directeur de service ayant la qualité,40000
+Directeur Régional,28000
+Directeur régional ayant la qualité,10500
+Fondé de pouvoirs des Trésoriers Régionaux,61500
+Greffier de chambre des Hautes Juridictions,15000
+Greffier des Hautes Juridictions,10000
+Greffier en chef,7500
+Greffier en chef (Conseil Constitutionnel),20000
+Chef de greffe des Cours et Tribunaux,12500
+Chef de greffe des Hautes Juridictions,20000
+Infirmier major du CMA/CM,6500
+Infirmier chef de poste,6500
+Inspecteur de la médecine du travail,28000
+Inspecteur technique des services de la DGI,25000
+Inspecteur général du Trésor,50000
+Inspecteur technique des services,65000
+Inspecteur vérificateur du Trésor,10000
+Médecin responsable du CM/CMA,10000
+Médecin Chef de District,17000
+Médecin chef du CNAOB,10500
+Médecin personnel du Premier Ministre,30000
+Médecin personnel du Président du Faso,30000
+Payeur général du trésor,120000
+Percepteur à l'étranger,14500
+Percepteur hors catégorie,40000
+Percepteur de 1ère classe,35000
+Percepteur de 2ème classe,30000
+Percepteur de 3ème classe,25000
+Percepteur de 4ème classe,20000
+Percepteur spécialisé,59000
+Protocole des gouverneurs,10500
+Proviseur de lycée,12000
+Receveur hors catégorie,40000
+Receveur de 1ère catégorie,32500
+Receveur de 2ème catégorie,27500
+Receveur de 3ème catégorie,22500
+Receveur général du trésor,120000
+Régisseur de maison d'arrêt et de correction,18500
+Responsable CISSE CM/ CMA,6500
+Responsable CISSE DRS,6500
+Responsable d’unité,10500
+"Responsable de dispensaire isolé, maternité",7000
+Responsable de la maintenance (District),6500
+Responsable de la maintenance et de la,6500
+Responsable de la pharmacie (District et DRS),6500
+Responsable de service de la lutte contre la,6500
+Responsable des ressources humaines (DRS),6500
+Responsable du service du protocole du,20000
+Secrétaires généraux des institutions et des,60000
+Secrétaire Général de la défense nationale,25000
+Secrétaire Général de la Présidence du Faso,75000
+Secrétaire Général du Conseil Constitutionnel,80000
+Secrétaire Général du Premier Ministère,70000
+Secrétaire permanent,33000
+Secrétaires techniques,25000
+SG Adjoint CM,6500
+Surveillant d’unité du CMA/CM ou unités,71000
+Trésorier principal de 2ème classe,51000
+Trésorier régional,76000
+Administrateurs des Secrétariats permanents,20000
+Chargé d’Etude nommé par décret au MEF,20000
+Chargé d’Etude nommé par arrêté au MEF,15000
+Chef de cabinet au MEF,20000
+Chef de département des secrétariats,20000
+Chef de service nommé par arrêté au MEF,15000
+Chef de service nommé par décision au MEF,10000
+Conseiller technique au MEF,43000
+Directeur Adjoint au MEF,17500
+Directeur central au MEF,20000
+Autre Directeur général au MEF,38000
+Inspecteur de services de la DGB et de la,15000
+DGCMEF,43000
+Inspecteur technique de services de la DGB et,70000
+Inspecteur Général des Services,130000
+Chargé de Mission,40000
+Chargé d'étude,80000
+Conseiller Technique,95000
+Chef de département des Secrétariats permanents,80000
+Directeur de Cabinet,80000
+Directeur Général et Directeur régional,80000
+"Directeur central (DAF, DRH, DCPM, DMP)",80000
+Directeur de service relevant des directions générales,80000
+Chef de service,60000
+Secrétaire Général du MATS relevant du personnel de la,240000
+Secrétaire Général du MATS relevant du personnel civil,175000
+Gouverneur de région,175000
+Préfet de police et Coordonnateur du renseignement,175000
+Secrétaire général de région,80000
+Secrétaire Général de province,60000
+Inspecteur général des services de police,180000
+Inspecteur Technique de Police,165000
+Chef de cabinet du Ministre,115000
+Directeur Général de la Police Nationale,153000
+Directeur général adjoint de la Police Nationale,130000
+Chef de cabinet du DGPN,80000
+Directeur central de la DGPN,115000
+Directeurs centraux,80000
+Directeur Général des écoles de Police,115000
+Directeur de l'école nationale de Police,115000
+Coordonnateur des études des écoles de police,25000
+Enseignant permanent,20000
+Chef de division des écoles de police,20000
+Chef d'encadrement technique des écoles de police,20000
+Chef de service Police Auto-école,15000
+Infirmier major,15000
+Directeur des CRS (DCRS),125000
+Directeur des ressources humaines,80000
+Directeur de l’administration et des finances,95000
+Directeur des marchés publics,80000
+Directeur de la communication et de la presse ministérielle,80000
+Haut-commissaire,80000
+Secrétaire technique,50000
+Préfet de département,35000
+Directeur régional de la Police,20000
+Directeur provincial de la police,85000
+Commandant de groupement de la CRS,20000
+Commissaire central de police,20000
+Commissaire de police d'arrondissement,15000
+Chef de police spéciale,10000
+"Commissaire de police de district, chef PPF",10000
+Secrétaire général,160000
+Chef de cabinet,50000
+Inspecteur Technique,165000
+Ministre conseiller d'Ambassade,50000
+"Ambassadeur, Représentant permanent adjoint",130000
+Consul général,130000
+Consul,110000
+Premier conseiller d'Ambassade,40000
+"Vice consul, 2ème Conseiller, Autre Conseiller",35000
+"Attaché spécialisé (financier, militaire, et de presse)",35000
+"Conseiller adjoint, 1er secrétaire d'Ambassade",30000
+"Attaché financier adjoint, 2ème secrétaire d'Ambassade",25000
+"Attaché d'ambassade, 3ème secrétaire d'Ambassade",20000
+Directeur Général du protocole d'Etat,160000
+Directeur général adjoint du Protocole d'Etat,130000
+Directeur de service des Directions générales,50000
+"Directeur de direction spécifique du MAECR (DCVD, DIT",50000
+"Directeur de direction d'appui (DAF, DMP)",65000
+"Autre directeur de direction d'appui (DRH, DCPM)",50000
+Chargé d’études,50000
+Personnel de Catégorie A exerçant au ministère en charge,10000
+Personnel des Catégories B et C exerçant au ministère en,8000
+Personnel des Catégories D et E exerçant au ministère en,5000
