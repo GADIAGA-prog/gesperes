@@ -22,6 +22,8 @@ use Illuminate\Support\Str;
  */
 class VentilationService
 {
+    public function __construct(private IndemniteService $indemnites) {}
+
     public const PARAGRAPHES = [
         661 => 'Traitements et salaires',
         663 => 'Primes et indemnités',
@@ -213,7 +215,7 @@ class VentilationService
         $residence = (float) config('grille.residence_taux', 0.10);
 
         $agents = Agent::query()
-            ->with(['emploi', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'fonction',
+            ->with(['emploi', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'fonction', 'localite.zone',
                     'structure.action.programme', 'structure.parent.parent.parent.parent', 'indemnites.indemnite'])
             ->whereHas('structure.action')
             // Filtre structure « cascade » : la structure choisie ET tout son sous-arbre.
@@ -295,10 +297,12 @@ class VentilationService
             'ir'        => round($solde * $residence),
             'cm'        => $m('CM'),
             'resp'      => (float) ($a->fonction?->indemnite_responsabilite ?? 0),
-            'astr'      => $m('ASTR'),
-            'log'       => $m('LOG'),
-            'tech'      => $m('TECH'),
-            'autres'    => $m('SPEC'),
+            // Indemnités barème calculées (logement/technicité toujours ; astreinte/
+            // spécifique selon zone, sinon valeur réelle attribuée). « Autres » = spécifique.
+            'astr'      => $this->indemnites->astreinte($a) ?? $m('ASTR'),
+            'log'       => $this->indemnites->logement($a),
+            'tech'      => $this->indemnites->technicite($a),
+            'autres'    => $this->indemnites->specifique($a) ?? $m('SPEC'),
             'allo'      => $m('ALLOC'),
             'carfo'     => round($solde * $carfo),
         ];

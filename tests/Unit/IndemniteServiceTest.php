@@ -2,9 +2,13 @@
 
 namespace Tests\Unit;
 
+use App\Enums\LieuExercice;
 use App\Models\Agent;
+use App\Models\BaremeLogement;
 use App\Models\BaremeTechnicite;
+use App\Models\Categorie;
 use App\Models\Echelle;
+use App\Models\Emploi;
 use App\Models\Indemnite;
 use App\Models\Indice;
 use App\Services\IndemniteService;
@@ -40,16 +44,48 @@ class IndemniteServiceTest extends TestCase
     #[Test]
     public function calcule_un_bareme_de_technicite_selon_l_echelle(): void
     {
-        $echelle = Echelle::create(['code' => 'A1', 'libelle' => 'A1', 'actif' => true]);
+        // Le barème de technicité est codé « catégorie + n° d'échelle » : A + ECHL1 = A1.
+        $cat = Categorie::create(['code' => 'A', 'libelle' => 'A', 'actif' => true]);
+        $echelle = Echelle::create(['code' => 'ECHL1', 'libelle' => 'Échelle 1', 'actif' => true]);
         BaremeTechnicite::create(['echelle_code' => 'A1', 'montant' => 27000, 'actif' => true]);
 
         $agent = Agent::create([
             'matricule' => '30000002', 'nom' => 'OUEDRAOGO', 'prenoms' => 'Awa', 'sexe' => 'F',
-            'echelle_id' => $echelle->id,
+            'categorie_id' => $cat->id, 'echelle_id' => $echelle->id,
         ]);
 
         $tech = Indemnite::create(['code' => 'TECH', 'libelle' => 'Technicité', 'mode' => 'bareme', 'bareme' => 'technicite', 'valeur' => 0, 'actif' => true]);
 
         $this->assertSame(27000.0, (new IndemniteService())->calculer($agent, $tech));
+    }
+
+    #[Test]
+    public function le_logement_depend_de_la_categorie_de_l_enseignement_et_du_lieu(): void
+    {
+        $cat = Categorie::create(['code' => 'A', 'libelle' => 'A', 'actif' => true]);
+        $prof = Emploi::create(['code' => 'PROF', 'libelle' => 'Professeur', 'enseignant' => true, 'actif' => true]);
+        $admin = Emploi::create(['code' => 'ADM', 'libelle' => 'Administratif', 'enseignant' => false, 'actif' => true]);
+
+        // Barème : (catégorie, enseignant, en_classe) → montant.
+        BaremeLogement::create(['categorie_code' => 'A', 'enseignant' => true, 'en_classe' => true, 'montant' => 69300, 'actif' => true]);
+        BaremeLogement::create(['categorie_code' => 'A', 'enseignant' => true, 'en_classe' => false, 'montant' => 55000, 'actif' => true]);
+        BaremeLogement::create(['categorie_code' => 'A', 'enseignant' => false, 'en_classe' => false, 'montant' => 50000, 'actif' => true]);
+
+        $service = new IndemniteService();
+
+        // Enseignant en classe → 69 300.
+        $enClasse = Agent::create(['matricule' => 'L1', 'nom' => 'A', 'prenoms' => 'B', 'sexe' => 'M',
+            'categorie_id' => $cat->id, 'emploi_id' => $prof->id, 'lieu_exercice' => LieuExercice::EN_CLASSE->value]);
+        $this->assertSame(69300.0, $service->logement($enClasse));
+
+        // Enseignant au bureau → 55 000.
+        $auBureau = Agent::create(['matricule' => 'L2', 'nom' => 'A', 'prenoms' => 'B', 'sexe' => 'M',
+            'categorie_id' => $cat->id, 'emploi_id' => $prof->id, 'lieu_exercice' => LieuExercice::AU_BUREAU->value]);
+        $this->assertSame(55000.0, $service->logement($auBureau));
+
+        // Non-enseignant au bureau → 50 000.
+        $nonEns = Agent::create(['matricule' => 'L3', 'nom' => 'A', 'prenoms' => 'B', 'sexe' => 'M',
+            'categorie_id' => $cat->id, 'emploi_id' => $admin->id, 'lieu_exercice' => LieuExercice::AU_BUREAU->value]);
+        $this->assertSame(50000.0, $service->logement($nonEns));
     }
 }

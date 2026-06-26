@@ -12,18 +12,33 @@ use App\Models\BaremeTechnicite;
 use App\Models\Indemnite;
 
 /**
- * Moteur de calcul des indemnités à partir du référentiel PARAMÉTRABLE et des
- * barèmes du décret 2014-427 (données GESPER). Aucun taux n'est codé en dur.
+ * Moteur de calcul des indemnités à partir des barèmes du décret 2014-427
+ * (données GESPER). Aucun taux n'est codé en dur.
+ *
+ * Règles appliquées (cf. fichiers GESPER) :
+ *  - Logement   : barème (catégorie × enseignant × en classe/au bureau).
+ *  - Technicité : barème par échelle, codée « catégorie + n° d'échelle »
+ *                 (A + ECHL1 = A1, P + ECHLA = PA).
+ *  - Astreinte  : barème (emploi × zone) — nécessite la zone de l'agent.
+ *  - Spécifique : barème (emploi × zone) — nécessite la zone de l'agent.
+ *
+ * Les barèmes (petites tables) sont chargés une fois et mémoïsés sur l'instance
+ * pour éviter toute requête par agent lors des calculs de masse (budget).
  */
 class IndemniteService
 {
-    /** Montant mensuel d'une indemnité pour un agent donné. */
+    private ?array $logementMap = null;
+    private ?array $astreinteMap = null;
+    private ?array $specifiqueMap = null;
+    private ?array $techniciteMap = null;
+
+    /** Montant mensuel d'une indemnité pour un agent donné (interface générique UI). */
     public function calculer(Agent $agent, Indemnite $indemnite): float
     {
         return match ($indemnite->mode) {
             ModeIndemnite::MONTANT_FIXE => (float) $indemnite->valeur,
             ModeIndemnite::POURCENTAGE  => round((float) $indemnite->valeur / 100 * $this->base($agent), 2),
-            ModeIndemnite::BAREME       => $this->bareme($agent, $indemnite),
+            ModeIndemnite::BAREME       => $this->baremePourCode($agent, (string) $indemnite->bareme) ?? 0.0,
         };
     }
 
@@ -38,36 +53,134 @@ class IndemniteService
             ->all();
     }
 
-    /** Résolution d'un barème selon les caractéristiques de l'agent. */
-    private function bareme(Agent $agent, Indemnite $indemnite): float
+    /* ───────── Indemnités barème, par type (utilisées par le budget) ───────── */
+
+    /** Logement = barème(catégorie, enseignant, au bureau/en classe). Toujours calculable. */
+    public function logement(Agent $agent): float
     {
-        $zone = $agent->localite?->zone?->code;
-        $estEnseignant = (bool) $agent->emploi?->enseignant;
-        $enClasse = $agent->lieu_exercice === LieuExercice::EN_CLASSE;
+        $cat = $agent->categorie?->code;
+        if (! $cat) {
+            return 0.0;
+        }
+        $enseignant = $agent->emploi?->enseignant ? '1' : '0';
+        $enClasse   = $agent->lieu_exercice === LieuExercice::EN_CLASSE ? '1' : '0';
 
-        $montant = match ($indemnite->bareme) {
-            'astreinte' => $agent->emploi && $zone
-                ? BaremeAstreinte::where('emploi_code', $agent->emploi->code)->where('zone_code', $zone)->value('montant')
-                : null,
-            'specifique' => $agent->emploi && $zone
-                ? BaremeSpecifique::where('emploi_code', $agent->emploi->code)->where('zone_code', $zone)->value('montant')
-                : null,
-            'logement' => $agent->categorie
-                ? BaremeLogement::where('categorie_code', $agent->categorie->code)
-                    ->where('enseignant', $estEnseignant)->where('en_classe', $enClasse)->value('montant')
-                : null,
-            'technicite' => $agent->echelle
-                ? BaremeTechnicite::where('echelle_code', $agent->echelle->code)->value('montant')
-                : null,
-            default => null,
+        return $this->mapLogement()[$cat . '|' . $enseignant . '|' . $enClasse] ?? 0.0;
+    }
+
+    /** Technicité = barème par échelle (code « catégorie + n° d'échelle »). Toujours calculable. */
+    public function technicite(Agent $agent): float
+    {
+        $cat = $agent->categorie?->code;
+        $ech = $agent->echelle?->code;
+        if (! $cat || ! $ech) {
+            return 0.0;
+        }
+
+        return $this->mapTechnicite()[$cat . str_replace('ECHL', '', $ech)] ?? 0.0;
+    }
+
+    /**
+     * Astreinte = barème(emploi, zone). Renvoie null si la zone de l'agent n'est
+     * pas déterminable (décentralisé non rattaché à une localité) — le budget
+     * retombe alors sur la valeur réelle attribuée.
+     */
+    public function astreinte(Agent $agent): ?float
+    {
+        return $this->emploiZone($agent, $this->mapAstreinte());
+    }
+
+    /** Spécifique harmonisée = barème(emploi, zone). Voir astreinte() pour le null. */
+    public function specifique(Agent $agent): ?float
+    {
+        return $this->emploiZone($agent, $this->mapSpecifique());
+    }
+
+    /**
+     * Zone d'astreinte/résidence de l'agent :
+     *  1. la zone de sa localité si elle est renseignée ;
+     *  2. sinon, administration centrale (hors DRESFPT/DPESFPT) = Ouagadougou = urbaine ;
+     *  3. sinon (décentralisé non rattaché) : indéterminée (null).
+     */
+    public function zonePour(Agent $agent): ?string
+    {
+        if ($zone = $agent->localite?->zone?->code) {
+            return $zone;
+        }
+
+        return $this->estDecentralise($agent) ? null : 'urbaine';
+    }
+
+    /* ───────── Internes ───────── */
+
+    private function emploiZone(Agent $agent, array $map): ?float
+    {
+        $zone = $this->zonePour($agent);
+        $emploi = $agent->emploi?->code;
+        if ($zone === null || ! $emploi) {
+            return null;
+        }
+
+        // Zone connue mais emploi absent du barème = pas d'indemnité (0), pas un « inconnu ».
+        return $map[$emploi . '|' . $zone] ?? 0.0;
+    }
+
+    /** Un agent est décentralisé si un maillon de sa cascade est une DRESFPT/DPESFPT. */
+    private function estDecentralise(Agent $agent): bool
+    {
+        foreach ($agent->structure?->cheminNiveaux() ?? [] as $libelle) {
+            $u = mb_strtoupper((string) $libelle);
+            if (str_contains($u, 'DRESFPT') || str_contains($u, 'DPESFPT')) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /** Dispatch barème générique (UI : calculer()). */
+    private function baremePourCode(Agent $agent, string $bareme): ?float
+    {
+        return match ($bareme) {
+            'logement'   => $this->logement($agent),
+            'technicite' => $this->technicite($agent),
+            'astreinte'  => $this->astreinte($agent),
+            'specifique' => $this->specifique($agent),
+            default      => null,
         };
-
-        return (float) ($montant ?? 0);
     }
 
     /** Base de calcul pour les indemnités proportionnelles : le salaire indiciaire. */
     private function base(Agent $agent): float
     {
         return (float) ($agent->indice?->salaire_indiciaire ?? 0);
+    }
+
+    /* ───────── Barèmes mémoïsés (chargés une seule fois) ───────── */
+
+    private function mapLogement(): array
+    {
+        return $this->logementMap ??= BaremeLogement::where('actif', true)->get()
+            ->mapWithKeys(fn ($r) => [
+                $r->categorie_code . '|' . ($r->enseignant ? '1' : '0') . '|' . ($r->en_classe ? '1' : '0') => (float) $r->montant,
+            ])->all();
+    }
+
+    private function mapAstreinte(): array
+    {
+        return $this->astreinteMap ??= BaremeAstreinte::where('actif', true)->get()
+            ->mapWithKeys(fn ($r) => [$r->emploi_code . '|' . $r->zone_code => (float) $r->montant])->all();
+    }
+
+    private function mapSpecifique(): array
+    {
+        return $this->specifiqueMap ??= BaremeSpecifique::where('actif', true)->get()
+            ->mapWithKeys(fn ($r) => [$r->emploi_code . '|' . $r->zone_code => (float) $r->montant])->all();
+    }
+
+    private function mapTechnicite(): array
+    {
+        return $this->techniciteMap ??= BaremeTechnicite::where('actif', true)->get()
+            ->mapWithKeys(fn ($r) => [$r->echelle_code => (float) $r->montant])->all();
     }
 }

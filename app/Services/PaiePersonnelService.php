@@ -13,7 +13,10 @@ use App\Models\Agent;
  */
 class PaiePersonnelService
 {
-    public function __construct(private GrilleIndiciaireService $grille) {}
+    public function __construct(
+        private GrilleIndiciaireService $grille,
+        private IndemniteService $indemnites,
+    ) {}
 
     public function ligne(Agent $agent): array
     {
@@ -28,13 +31,16 @@ class PaiePersonnelService
         $residence = $indice ? round($this->grille->residence($indice)) : 0.0;
         $carfo     = $indice ? $this->grille->carfo($indice) : 0.0;
 
-        // Indemnité de fonction : pilotée par la fonction de l'agent.
+        // Indemnités barème (décret 2014-427) calculées depuis les règles.
+        // Logement et technicité sont toujours calculables ; astreinte/spécifique
+        // dépendent de la zone — à défaut (décentralisé non rattaché), on retombe
+        // sur le montant réel attribué à l'agent.
         $resp   = (float) ($agent->fonction?->indemnite_responsabilite ?? 0);
         $alloc  = $m('ALLOC');
-        $log    = $m('LOG');
-        $astr   = $m('ASTR');
-        $spec   = $m('SPEC');
-        $tech   = $m('TECH');
+        $log    = $this->indemnites->logement($agent);
+        $tech   = $this->indemnites->technicite($agent);
+        $astr   = $this->indemnites->astreinte($agent) ?? $m('ASTR');
+        $spec   = $this->indemnites->specifique($agent) ?? $m('SPEC');
         $autres = $m('AUTRES');
 
         // Total mensuel = solde + résidence + indemnités (émoluments).

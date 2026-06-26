@@ -106,7 +106,8 @@ class BudgetController extends Controller
             };
 
             $acc = [];
-            $base()->with(['indice', 'indemnites.indemnite', 'fonction', 'structure.action.programme'])
+            $base()->with(['indice', 'indemnites.indemnite', 'fonction', 'categorie', 'emploi', 'echelle',
+                    'localite.zone', 'structure.action.programme', 'structure.parent.parent.parent.parent'])
                 ->chunk(500, function ($lot) use (&$acc, $paie, $mode) {
                     foreach ($lot as $agent) {
                         $p = $paie->ligne($agent);
@@ -121,7 +122,8 @@ class BudgetController extends Controller
             $synthese = collect($acc)->sortBy('libelle')->values();
         } else {
             $query = $base()
-                ->with(['emploi', 'poste', 'fonction', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'indemnites.indemnite', 'structure.action']);
+                ->with(['emploi', 'poste', 'fonction', 'categorie', 'echelle', 'classe', 'echelon', 'indice',
+                    'indemnites.indemnite', 'localite.zone', 'structure.action', 'structure.parent.parent.parent.parent']);
 
             // Filtre par colonne + tri par en-tête (sur les colonnes stockées en base ;
             // les montants de paie sont calculés en PHP et ne sont pas triables côté serveur).
