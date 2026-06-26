@@ -29,4 +29,9 @@
         </div>
         <button type="submit" class="btn btn-primary w-full justify-center">Se connecter</button>
     </form>
+
+    <div class="mt-6 border-t border-gray-100 pt-4 text-center text-sm text-gray-500">
+        Vous êtes un agent du ministère ?
+        <a href="{{ route('espace-agent.connexion') }}" class="text-institution-600 hover:underline">Accéder à l'espace agent</a>
+    </div>
 </x-guest-layout>

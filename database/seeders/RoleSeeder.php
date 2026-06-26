@@ -102,11 +102,10 @@ class RoleSeeder extends Seeder
             'pointage.view', 'conges.view',
             'alertes.view',
         ],
-        RoleName::AGENT_INDIVIDUEL->value => [
-            'dashboard.view',
-            'documents.view', 'documents.download',
-            'conges.view', 'conges.request',
-        ],
+        // Aucune permission d'administration : l'espace agent (self-service) est
+        // cloisonné par le middleware `agent.individuel` et le périmètre par
+        // user_id. Lui accorder dashboard.view/documents.* exposerait le back-office.
+        RoleName::AGENT_INDIVIDUEL->value => [],
     ];
 
     public function run(): void
@@ -125,7 +124,9 @@ class RoleSeeder extends Seeder
 
             if ($attribution === '*') {
                 $role->syncPermissions($toutes);
-            } elseif (! empty($attribution)) {
+            } else {
+                // Un tableau (même vide) synchronise EXACTEMENT ces permissions :
+                // l'agent individuel se retrouve ainsi sans aucune permission admin.
                 $role->syncPermissions($attribution);
             }
         }

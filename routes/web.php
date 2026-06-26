@@ -22,6 +22,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\IndemniteController;
 use App\Http\Controllers\CongeController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\EspaceAgent\EspaceAgentController;
 use App\Http\Controllers\FichePresenceController;
 use App\Http\Controllers\IndiceImportController;
 use App\Http\Controllers\PasswordController;
@@ -44,8 +45,10 @@ require __DIR__ . '/auth.php';
  * ──────────────────────────────────────────────────── */
 Route::middleware(['auth', 'verified'])->group(function () {
 
-    /* Racine → tableau de bord */
-    Route::get('/', fn () => redirect()->route('dashboard'));
+    /* Racine → tableau de bord (espace agent pour les comptes self-service) */
+    Route::get('/', fn () => auth()->user()->hasRole(\App\Enums\RoleName::AGENT_INDIVIDUEL->value)
+        ? redirect()->route('espace-agent.dashboard')
+        : redirect()->route('dashboard'));
 
     /* Tableau de bord */
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -362,3 +365,21 @@ Route::middleware(['auth', 'verified'])->group(function () {
     /* Audit */
     Route::get('/audit', [AuditController::class, 'index'])->name('audit.index');
 });
+
+/* ─────────────────────────────────────────────────────
+ *  ESPACE AGENT (self-service) — cloisonné, agent rattaché uniquement
+ * ──────────────────────────────────────────────────── */
+Route::middleware(['auth', 'agent.individuel'])
+    ->prefix('espace-agent')
+    ->name('espace-agent.')
+    ->group(function () {
+        Route::get('/',                [EspaceAgentController::class, 'dashboard'])->name('dashboard');
+        Route::get('/mes-informations', [EspaceAgentController::class, 'profil'])->name('profil');
+
+        Route::get('/mes-actes',       [EspaceAgentController::class, 'actes'])->name('actes');
+        Route::get('/mes-actes/{document}/telecharger', [EspaceAgentController::class, 'telecharger'])->name('actes.telecharger');
+
+        Route::get('/notifications',   [EspaceAgentController::class, 'notifications'])->name('notifications');
+        Route::post('/notifications/lues', [EspaceAgentController::class, 'marquerToutesLues'])->name('notifications.lues');
+        Route::post('/notifications/{notification}/lue', [EspaceAgentController::class, 'marquerLue'])->name('notifications.lue');
+    });

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>Hors ligne — GesPerES</title>
+    <link rel="icon" href="/images/icons/favicon-32.png" type="image/png">
+    <style>
+        :root { --bleu:#1e40af; --bleu-fonce:#172554; }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(160deg, var(--bleu) 0%, var(--bleu-fonce) 100%);
+            color: #fff; padding: 24px; text-align: center;
+        }
+        .carte { max-width: 360px; }
+        .logo {
+            width: 84px; height: 84px; border-radius: 22px; background: rgba(255,255,255,.12);
+            display: flex; align-items: center; justify-content: center; margin: 0 auto 24px;
+            backdrop-filter: blur(6px);
+        }
+        .logo svg { width: 44px; height: 44px; }
+        h1 { font-size: 22px; margin: 0 0 8px; }
+        p { color: rgba(255,255,255,.75); line-height: 1.5; margin: 0 0 24px; font-size: 15px; }
+        button {
+            background: #fff; color: var(--bleu); border: 0; border-radius: 12px;
+            padding: 12px 24px; font-size: 15px; font-weight: 600; cursor: pointer;
+        }
+        button:active { transform: scale(.98); }
+    </style>
+</head>
+<body>
+    <div class="carte">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 1l22 22M16.72 11.06A10.94 10.94 0 0 1 19 12.55M5 12.55a10.94 10.94 0 0 1 5.17-2.39M10.71 5.05A16 16 0 0 1 22.58 9M1.42 9a15.91 15.91 0 0 1 4.7-2.88M8.53 16.11a6 6 0 0 1 6.95 0M12 20h.01"/>
+            </svg>
+        </div>
+        <h1>Vous êtes hors ligne</h1>
+        <p>Cette page nécessite une connexion Internet. Vérifiez votre réseau, puis réessayez.</p>
+        <button onclick="location.reload()">Réessayer</button>
+    </div>
+</body>
+</html>
