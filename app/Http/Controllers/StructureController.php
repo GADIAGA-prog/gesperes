@@ -137,6 +137,10 @@ class StructureController extends Controller
 
         return [
             'parents'   => $parents,
+            // Géo effective de chaque structure (la sienne, sinon celle de l'ancêtre
+            // le plus proche) : permet d'auto-remplir région/province/commune par
+            // héritage du parent dans le formulaire.
+            'geoParStructure' => $this->geoParStructure(),
             'regions'   => Region::orderBy('libelle')->pluck('libelle', 'id'),
             'types'     => collect(TypeStructure::cases())->mapWithKeys(fn ($t) => [$t->value => $t->label()]),
             'actions'   => Action::orderBy('code')->get()->mapWithKeys(fn ($a) => [$a->id => $a->code . ' — ' . $a->libelle]),
@@ -147,5 +151,30 @@ class StructureController extends Controller
             'localitesParProvince' => $localitesProvin->groupBy('province_id')
                 ->map(fn ($g) => $g->map(fn ($l) => ['id' => $l->id, 'libelle' => $l->libelle])->values()),
         ];
+    }
+
+    /** Géo effective (région/province/commune) de chaque structure, héritée des ancêtres. */
+    private function geoParStructure(): array
+    {
+        $all = Structure::get(['id', 'parent_id', 'region_id', 'province_id', 'localite_id'])->keyBy('id');
+
+        $resoudre = function ($id) use (&$resoudre, $all) {
+            $node = $all[$id] ?? null;
+            $guard = 0;
+            while ($node && $guard < 12) {
+                if ($node->region_id || $node->province_id || $node->localite_id) {
+                    return [
+                        'region_id'   => $node->region_id,
+                        'province_id' => $node->province_id,
+                        'localite_id' => $node->localite_id,
+                    ];
+                }
+                $node = $node->parent_id ? ($all[$node->parent_id] ?? null) : null;
+                $guard++;
+            }
+            return ['region_id' => null, 'province_id' => null, 'localite_id' => null];
+        };
+
+        return $all->mapWithKeys(fn ($s, $id) => [$id => $resoudre($id)])->all();
     }
 }

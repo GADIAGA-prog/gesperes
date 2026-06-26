@@ -123,6 +123,21 @@ document.addEventListener('DOMContentLoaded', function () {
 
     tsRegion.on('change', function () { majProvinces(''); majCommunes(''); });
     tsProvince.on('change', function () { majCommunes(''); });
+
+    // --- Auto-remplissage géographique par héritage du parent ---
+    const geoParStructure = @json($geoParStructure ?? new \stdClass);
+    const tsParent = selects['parent_id'];
+    if (tsParent) {
+        tsParent.on('change', function (pid) {
+            const g = geoParStructure[pid];
+            if (! g) return;
+            // Région posée silencieusement (sans déclencher le reset de la cascade),
+            // puis province et commune remplies et présélectionnées d'après le parent.
+            tsRegion.setValue(g.region_id ? String(g.region_id) : '', true);
+            majProvinces(g.province_id ? String(g.province_id) : '');
+            majCommunes(g.localite_id ? String(g.localite_id) : '');
+        });
+    }
 });
 </script>
 @endpush
