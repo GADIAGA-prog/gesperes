@@ -1,0 +1,41 @@
+{
+    "_comment": "Gabarit Bubblewrap pour empaqueter la PWA Espace agent en application Android (TWA). Remplacez VOTRE-DOMAINE-PROD par le domaine HTTPS de production. En pratique, « bubblewrap init --manifest https://VOTRE-DOMAINE-PROD/manifest.webmanifest » régénère ce fichier automatiquement.",
+    "packageId": "bf.gov.mesfpt.gesperes",
+    "host": "VOTRE-DOMAINE-PROD",
+    "name": "GesPerES — Espace agent",
+    "launcherName": "GesPerES",
+    "display": "standalone",
+    "orientation": "portrait",
+    "themeColor": "#1e40af",
+    "themeColorDark": "#172554",
+    "navigationColor": "#1e40af",
+    "navigationColorDark": "#172554",
+    "backgroundColor": "#0f172a",
+    "enableNotifications": false,
+    "startUrl": "/espace-agent",
+    "iconUrl": "https://VOTRE-DOMAINE-PROD/images/icons/icon-512.png",
+    "maskableIconUrl": "https://VOTRE-DOMAINE-PROD/images/icons/icon-512.png",
+    "webManifestUrl": "https://VOTRE-DOMAINE-PROD/manifest.webmanifest",
+    "fallbackType": "customtabs",
+    "features": {},
+    "shortcuts": [
+        {
+            "name": "Mes actes",
+            "shortName": "Actes",
+            "url": "/espace-agent/mes-actes"
+        },
+        {
+            "name": "Notifications",
+            "shortName": "Notifs",
+            "url": "/espace-agent/notifications"
+        }
+    ],
+    "appVersionName": "1.0.0",
+    "appVersionCode": 1,
+    "minSdkVersion": 23,
+    "orientationLock": false,
+    "signingKey": {
+        "path": "./android.keystore",
+        "alias": "gesperes"
+    }
+}

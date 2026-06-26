@@ -40,6 +40,10 @@ use Illuminate\Support\Facades\Route;
  * ──────────────────────────────────────────────────── */
 require __DIR__ . '/auth.php';
 
+/* Digital Asset Links — association de l'app Android (TWA / Play Store). Public. */
+Route::get('/.well-known/assetlinks.json', \App\Http\Controllers\AssetLinksController::class)
+    ->name('assetlinks');
+
 /* ─────────────────────────────────────────────────────
  *  ROUTES PROTÉGÉES — utilisateur authentifié et actif
  * ──────────────────────────────────────────────────── */

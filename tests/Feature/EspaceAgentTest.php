@@ -199,6 +199,31 @@ class EspaceAgentTest extends TestCase
         $this->assertTrue($notif->fresh()->lu);
     }
 
+    // ── Digital Asset Links (TWA / Play Store) ────────────────────
+
+    #[Test]
+    public function assetlinks_vide_tant_que_lempreinte_nest_pas_configuree(): void
+    {
+        config(['gesperes.android.sha256_fingerprint' => null]);
+
+        $this->getJson('/.well-known/assetlinks.json')->assertOk()->assertExactJson([]);
+    }
+
+    #[Test]
+    public function assetlinks_expose_le_lien_app_site_quand_configure(): void
+    {
+        config([
+            'gesperes.android.package' => 'bf.gov.mesfpt.gesperes',
+            'gesperes.android.sha256_fingerprint' => 'AA:BB:CC, DD:EE:FF',
+        ]);
+
+        $this->getJson('/.well-known/assetlinks.json')
+            ->assertOk()
+            ->assertJsonPath('0.relation.0', 'delegate_permission/common.handle_all_urls')
+            ->assertJsonPath('0.target.package_name', 'bf.gov.mesfpt.gesperes')
+            ->assertJsonPath('0.target.sha256_cert_fingerprints', ['AA:BB:CC', 'DD:EE:FF']);
+    }
+
     #[Test]
     public function notification_acte_creee_pour_agent_rattache(): void
     {
