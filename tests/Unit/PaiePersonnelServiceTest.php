@@ -63,4 +63,26 @@ class PaiePersonnelServiceTest extends TestCase
         $this->assertSame(123932.0 + 12393.0 + 10500.0 + 69300.0 + 30500.0 + 15000.0 + 27000.0, $ligne['total_mois']);
         $this->assertSame($ligne['total_mois'] * 12, $ligne['total_annuel']);
     }
+
+    #[Test]
+    public function lallocation_familiale_est_calculee_depuis_les_enfants_sans_attribution(): void
+    {
+        config([
+            'gesperes.allocation_familiale.montant_par_enfant' => 2000,
+            'gesperes.allocation_familiale.nombre_max_enfants'  => 6,
+        ]);
+
+        // Agent avec 3 enfants, AUCUNE indemnité ALLOC figée/attribuée.
+        $agent = Agent::create([
+            'matricule' => 'AF1', 'nom' => 'NIKIEMA', 'prenoms' => 'Salif', 'sexe' => 'M',
+            'nombre_enfants' => 3,
+        ]);
+        $agent->load(['indice', 'fonction', 'indemnites.indemnite', 'categorie', 'echelle', 'emploi', 'localite.zone', 'structure']);
+
+        $ligne = app(PaiePersonnelService::class)->ligne($agent);
+
+        // 3 × 2 000 = 6 000, pris en compte dans la ligne de paie sans figer.
+        $this->assertSame(6000.0, $ligne['allocation']);
+        $this->assertSame(6000.0, $ligne['total_mois']);
+    }
 }
