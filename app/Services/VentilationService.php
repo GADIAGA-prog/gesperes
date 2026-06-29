@@ -40,6 +40,26 @@ class VentilationService
     private const CODES_663 = ['LOG', 'ASTR', 'SPEC', 'TECH'];
 
     /**
+     * Codes d'indemnités disposant déjà d'une colonne propre dans l'annexe.
+     * Tout le reste (charge militaire saisie autrement, AUTRES, indemnités
+     * créées sur mesure) est agrégé dans la colonne « Autres » (avec la
+     * spécifique), pour ne rien laisser de côté.
+     */
+    private const CODES_COLONNES = ['IR', 'CM', 'RESP', 'ASTR', 'LOG', 'TECH', 'SPEC', 'ALLOC'];
+
+    /** Somme mensuelle des indemnités attribuées d'un agent sans colonne dédiée. */
+    private function autresIndemnites(Agent $a): float
+    {
+        if (! $a->relationLoaded('indemnites')) {
+            return 0.0;
+        }
+
+        return (float) $a->indemnites
+            ->filter(fn ($x) => $x->actif && ! in_array($x->indemnite?->code, self::CODES_COLONNES, true))
+            ->sum(fn ($x) => (float) $x->montant);
+    }
+
+    /**
      * Masse salariale annuelle courante par action et par paragraphe.
      * Filtres optionnels : structure_id, programme_id, action_id.
      */
@@ -206,6 +226,8 @@ class VentilationService
             $cle = $r->pcode . '|' . $r->sid;
             $imm = $ind->get($cle, collect())->keyBy('code');
             $m = fn ($code) => (float) optional($imm->get($code))->total * 12; // mensuel → annuel
+            // « Autres » = spécifique + toute indemnité attribuée sans colonne dédiée (annualisé).
+            $autresAnnuel = $m('SPEC') + (float) $imm->reject(fn ($x) => in_array($x->code, self::CODES_COLONNES, true))->sum('total') * 12;
 
             $si = (float) $r->sind * $point;
             $ligne = [
@@ -218,7 +240,7 @@ class VentilationService
                 'astr'      => $m('ASTR'),
                 'log'       => $m('LOG'),
                 'tech'      => $m('TECH'),
-                'autres'    => $m('SPEC'), // « Autres » = spécifique (cf. liehoun)
+                'autres'    => $autresAnnuel, // spécifique + autres indemnités
                 'af'        => (float) $r->snbenf * $allocEnfant * 12, // allocation familiale calculée
                 'carfo'     => $si * $carfoPat,
             ];
@@ -344,7 +366,8 @@ class VentilationService
             'astr'      => $this->indemnites->astreinte($a) ?? $m('ASTR'),
             'log'       => $this->indemnites->logement($a),
             'tech'      => $this->indemnites->technicite($a),
-            'autres'    => $this->indemnites->specifique($a) ?? $m('SPEC'),
+            // « Autres » = indemnité spécifique + toute indemnité attribuée sans colonne dédiée.
+            'autres'    => ($this->indemnites->specifique($a) ?? $m('SPEC')) + $this->autresIndemnites($a),
             // Allocation familiale : attribuée si présente, sinon calcul auto (enfants).
             'allo'      => $m('ALLOC') ?: $this->indemnites->allocationFamiliale($a),
             'carfo'     => round($solde * $carfo),

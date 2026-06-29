@@ -170,12 +170,37 @@ class SuiviDossierController extends Controller
     private function formData(): array
     {
         return [
-            'natures'    => NatureDossier::where('actif', true)->orderBy('libelle')->get(),
-            'structures' => $this->structuresOptions(),
-            'agents'     => $this->agentsOptions(),
-            'etapes'     => EtapeDossier::options(),
-            'statuts'    => StatutSuiviDossier::options(),
+            'natures'         => NatureDossier::where('actif', true)->orderBy('libelle')->get(),
+            // Cascade : « Structure concernée » = directions ; « Service » filtré côté
+            // client à partir de l'arbre ; « Agent » chargé en AJAX (cf. agentsJson).
+            'directions'      => Structure::directions()->orderBy('libelle')->pluck('libelle', 'id'),
+            'arbreStructures' => Structure::where('actif', true)->orderBy('libelle')->get(['id', 'libelle', 'parent_id']),
+            'etapes'          => EtapeDossier::options(),
+            'statuts'         => StatutSuiviDossier::options(),
         ];
+    }
+
+    /**
+     * Recherche d'agents en JSON pour la saisie intelligente du formulaire de
+     * suivi : limitée au sous-arbre de la structure choisie (cascade) et au
+     * terme saisi. Évite de charger toute la base d'agents dans un <select>.
+     */
+    public function agentsJson(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $this->authorize('suivi.view');
+
+        $structureId = $request->integer('structure_id') ?: null;
+
+        $agents = Agent::query()
+            ->when($structureId, fn ($q, $v) => $q->whereIn('structure_id', Structure::sousArbreIds($v)))
+            ->recherche((string) $request->input('q'))
+            ->orderBy('nom')->orderBy('prenoms')
+            ->limit(50)
+            ->get(['id', 'matricule', 'nom', 'prenoms']);
+
+        return response()->json(
+            $agents->map(fn ($a) => ['id' => $a->id, 'text' => $a->matricule . ' — ' . $a->nom_complet])
+        );
     }
 
     private function structuresOptions()

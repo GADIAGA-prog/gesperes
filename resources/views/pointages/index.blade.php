@@ -6,12 +6,17 @@
 
 {{-- Sélection structure + date --}}
 <form method="GET" class="card mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
-    <x-form.select name="structure_id" label="Structure" :options="$structures" :selected="$structureId" required />
+    <x-form.select name="structure_id" label="Structure" :options="$structures" :selected="$structureId" required data-recherche />
     <x-form.input name="date" label="Date" type="date" :value="$date" required />
     <div class="flex items-end">
         <button type="submit" class="btn btn-primary">Charger</button>
     </div>
 </form>
+@include('partials.select-recherche')
+
+<p class="-mt-2 mb-4 text-xs text-gray-400">
+    La sélection d'une structure charge aussi les agents de tous ses services (cascade).
+</p>
 
 @if ($structureId && $agents->isEmpty())
     <div class="card text-center text-gray-400 py-8">Aucun agent rattaché à cette structure.</div>
