@@ -99,6 +99,11 @@ actions_formation       → actions planifiées (synthèse 1→7 : thème, modal
 besoins_formation       → recueil des besoins par agent (fiche Annexe 1)
 -- Lien réalisation : formations.action_formation_id → suivi prévu vs réalisé
 
+-- TPEE (Tableau Prévisionnel des Effectifs et des Emplois) --
+previsions_effectifs    → hypothèses par emploi × année (entrées prévues + effectif cible),
+                          portée structure_id nullable (NULL = national). Départs (retraite)
+                          et effectif courant dérivés des agents (TpeeService), non stockés.
+
 -- Référentiels rémunération --
 categories, echelles, classes, echelons, indices
 
@@ -146,6 +151,7 @@ competences.view / competences.manage
 performance.view / performance.manage
 discipline.view / discipline.manage
 gpec.view
+tpee.manage
 suivi.view / suivi.manage
 alertes.view
 documents.view / upload / download / delete
