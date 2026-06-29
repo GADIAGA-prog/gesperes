@@ -52,6 +52,7 @@ final class Permissions
             'performance.view'   => 'Consulter les évaluations',
             'performance.manage' => 'Gérer les évaluations',
             'gpec.view'          => 'Consulter la GPEC',
+            'tpee.manage'        => 'Gérer le TPEE (prévision des effectifs)',
         ],
         'Fiches de poste' => [
             'fiches-poste.view'   => 'Consulter les fiches de poste',

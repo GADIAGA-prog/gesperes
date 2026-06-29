@@ -316,6 +316,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::prefix('outils-grh')->name('outils-grh.')->group(function () {
         Route::get('/tpee',             [OutilsGrhController::class, 'tpee'])->name('tpee');
+        Route::post('/tpee',            [OutilsGrhController::class, 'tpeeStore'])->name('tpee.store');
+        Route::get('/tpee/pdf',         [OutilsGrhController::class, 'tpeePdf'])->name('tpee.pdf');
         Route::get('/referentiels-mpp', [OutilsGrhController::class, 'referentielsMpp'])->name('referentiels-mpp');
     });
 
