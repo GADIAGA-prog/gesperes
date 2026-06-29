@@ -212,6 +212,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/creer',  [SuiviDossierController::class, 'create'])->name('create');
         Route::post('/',      [SuiviDossierController::class, 'store'])->name('store');
 
+        /* Recherche d'agents (cascade) en JSON — déclaré avant /{suivi_dossier} */
+        Route::get('/recherche-agents', [SuiviDossierController::class, 'agentsJson'])->name('agents');
+
         /* Référentiel des natures — déclaré avant /{suivi_dossier} */
         Route::get('/natures',                  [SuiviDossierController::class, 'natures'])->name('natures.index');
         Route::post('/natures',                 [SuiviDossierController::class, 'storeNature'])->name('natures.store');

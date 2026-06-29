@@ -30,12 +30,16 @@ class PointageController extends Controller
 
         if ($structureId) {
             $structure = Structure::find($structureId);
-            $agents = Agent::where('structure_id', $structureId)
+
+            // Cascade : la structure ET tous ses services/sous-structures.
+            $sousArbre = Structure::sousArbreIds($structureId);
+
+            $agents = Agent::whereIn('structure_id', $sousArbre)
                 ->with(['emploi', 'fonction'])
                 ->orderBy('nom')->orderBy('prenoms')
                 ->get();
 
-            $pointages = Pointage::where('structure_id', $structureId)
+            $pointages = Pointage::whereIn('structure_id', $sousArbre)
                 ->whereDate('date_pointage', $date)
                 ->get()
                 ->keyBy('agent_id');
@@ -70,9 +74,11 @@ class PointageController extends Controller
 
         $enregistres = 0;
 
+        // L'agent doit appartenir à la structure pointée OU à l'un de ses services.
+        $sousArbre = Structure::sousArbreIds($data['structure_id']);
+
         foreach ($data['lignes'] as $agentId => $ligne) {
-            // L'agent doit appartenir à la structure pointée.
-            if (! Agent::where('id', $agentId)->where('structure_id', $data['structure_id'])->exists()) {
+            if (! Agent::where('id', $agentId)->whereIn('structure_id', $sousArbre)->exists()) {
                 continue;
             }
 
