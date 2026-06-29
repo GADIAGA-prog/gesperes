@@ -52,6 +52,19 @@ class CascadeStructureTest extends TestCase
     }
 
     #[Test]
+    public function la_fiche_a_de_presence_inclut_les_agents_des_services(): void
+    {
+        [$direction, $agentDir, $agentSvc] = $this->arbreAvecAgents();
+
+        $fiche = app(\App\Services\FichePresenceService::class)->ficheA($direction->id, '2026-06-29');
+
+        $matricules = collect($fiche['lignes'])->pluck('matricule')->all();
+        $this->assertContains('DIR001', $matricules);
+        $this->assertContains('SVC001', $matricules); // agent du service rattaché (cascade)
+        $this->assertCount(2, $fiche['lignes']);
+    }
+
+    #[Test]
     public function la_recherche_agents_du_suivi_est_limitee_au_sous_arbre(): void
     {
         $user = $this->utilisateurRh();

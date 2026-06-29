@@ -21,12 +21,16 @@ class FichePresenceService
     {
         $structure = Structure::find($structureId);
 
-        $agents = Agent::where('structure_id', $structureId)
+        // Cascade : la structure ET tous ses services/sous-structures (cohérent
+        // avec l'écran de pointage).
+        $sousArbre = Structure::sousArbreIds($structureId);
+
+        $agents = Agent::whereIn('structure_id', $sousArbre)
             ->with(['emploi', 'fonction'])
             ->orderBy('nom')->orderBy('prenoms')
             ->get();
 
-        $pointages = Pointage::where('structure_id', $structureId)
+        $pointages = Pointage::whereIn('structure_id', $sousArbre)
             ->whereDate('date_pointage', $date)
             ->get()->keyBy('agent_id');
 
@@ -59,7 +63,7 @@ class FichePresenceService
         $fin = $debut->copy()->endOfMonth();
 
         $lignes = $this->agregerAbsences(
-            Pointage::where('structure_id', $structureId)
+            Pointage::whereIn('structure_id', Structure::sousArbreIds($structureId))
                 ->whereBetween('date_pointage', [$debut->toDateString(), $fin->toDateString()])
                 ->where('present', false)
         );
