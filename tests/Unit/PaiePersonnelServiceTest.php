@@ -85,4 +85,27 @@ class PaiePersonnelServiceTest extends TestCase
         $this->assertSame(6000.0, $ligne['allocation']);
         $this->assertSame(6000.0, $ligne['total_mois']);
     }
+
+    #[Test]
+    public function la_colonne_autres_agrege_toute_indemnite_sans_colonne_dediee(): void
+    {
+        $agent = Agent::create([
+            'matricule' => 'AUT1', 'nom' => 'KONE', 'prenoms' => 'Bakary', 'sexe' => 'M',
+        ]);
+
+        $autres = \App\Models\Indemnite::create(['code' => 'AUTRES', 'libelle' => 'Autres', 'mode' => 'montant_fixe', 'valeur' => 0, 'actif' => true]);
+        $cm     = \App\Models\Indemnite::create(['code' => 'CM', 'libelle' => 'Charge militaire', 'mode' => 'montant_fixe', 'valeur' => 0, 'actif' => true]);
+        // Une indemnité barème (a sa propre colonne) ne doit PAS retomber dans « Autres ».
+        $tech   = \App\Models\Indemnite::create(['code' => 'TECH', 'libelle' => 'Technicité', 'mode' => 'bareme', 'bareme' => 'technicite', 'valeur' => 0, 'actif' => true]);
+
+        $agent->indemnites()->create(['indemnite_id' => $autres->id, 'montant' => 8000, 'actif' => true]);
+        $agent->indemnites()->create(['indemnite_id' => $cm->id, 'montant' => 5000, 'actif' => true]);
+        $agent->indemnites()->create(['indemnite_id' => $tech->id, 'montant' => 27000, 'actif' => true]);
+
+        $agent->load(['indice', 'fonction', 'indemnites.indemnite', 'categorie', 'echelle', 'emploi', 'localite.zone', 'structure']);
+        $ligne = app(PaiePersonnelService::class)->ligne($agent);
+
+        // AUTRES (8 000) + charge militaire (5 000) = 13 000 ; la technicité reste hors « Autres ».
+        $this->assertSame(13000.0, $ligne['autres']);
+    }
 }

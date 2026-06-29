@@ -43,7 +43,16 @@ class PaiePersonnelService
         $tech   = $this->indemnites->technicite($agent);
         $astr   = $this->indemnites->astreinte($agent) ?? $m('ASTR');
         $spec   = $this->indemnites->specifique($agent) ?? $m('SPEC');
-        $autres = $m('AUTRES');
+
+        // « Autres » = vrai fourre-tout : toute indemnité attribuée active qui n'a
+        // PAS sa propre colonne (AUTRES, charge militaire CM, indemnités créées sur
+        // mesure…). Évite que ces montants soient silencieusement ignorés.
+        $codesDedies = ['RESP', 'ALLOC', 'LOG', 'ASTR', 'SPEC', 'TECH', 'IR'];
+        $autres = $agent->relationLoaded('indemnites')
+            ? (float) $agent->indemnites
+                ->filter(fn ($x) => $x->actif && ! in_array($x->indemnite?->code, $codesDedies, true))
+                ->sum(fn ($x) => (float) $x->montant)
+            : 0.0;
 
         // Total mensuel = solde + résidence + indemnités (émoluments).
         // La CARFO (retenue agent) est affichée à part, hors total.
