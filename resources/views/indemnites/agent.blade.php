@@ -9,7 +9,7 @@
         <a href="{{ route('agents.indemnites.bulletin', $agent) }}" class="btn btn-secondary">Bulletin PDF</a>
         @can('indemnites.manage')
             <form method="POST" action="{{ route('agents.indemnites.figer', $agent) }}">@csrf
-                <button type="submit" class="btn btn-primary">Calculer &amp; figer les barèmes</button>
+                <button type="submit" class="btn btn-primary">Calculer &amp; figer (responsabilité, allocation, barèmes)</button>
             </form>
         @endcan
     </div>

@@ -63,7 +63,49 @@ class IndemniteService
             ->all();
     }
 
+    /**
+     * Rémunération effective d'un agent : pour chaque indemnité active, le
+     * montant réellement attribué (s'il existe une attribution active) sinon le
+     * montant calculé par les règles.
+     *
+     * C'est la vue COMPLÈTE utilisée par le bulletin : elle réunit les barèmes,
+     * la responsabilité (RESP) et l'allocation familiale (ALLOC) calculées, ET
+     * les indemnités saisies manuellement (ex. AUTRES, charge militaire) — qui
+     * étaient jusqu'ici ignorées par le bulletin.
+     *
+     * @return array<int, array{indemnite: Indemnite, montant: float, source: string}>
+     */
+    public function remuneration(Agent $agent): array
+    {
+        $attributions = $agent->indemnites()
+            ->where('actif', true)
+            ->get()
+            ->keyBy('indemnite_id');
+
+        return Indemnite::where('actif', true)->orderBy('libelle')->get()
+            ->map(function (Indemnite $i) use ($agent, $attributions) {
+                $attribuee = $attributions->get($i->id);
+
+                return [
+                    'indemnite' => $i,
+                    'montant'   => $attribuee ? (float) $attribuee->montant : $this->calculer($agent, $i),
+                    'source'    => $attribuee ? 'attribution' : 'calcul',
+                ];
+            })
+            ->all();
+    }
+
     /* ───────── Indemnités barème, par type (utilisées par le budget) ───────── */
+
+    /**
+     * Allocation familiale calculée (nombre d'enfants × barème plafonné), comme
+     * à l'écran. Toujours disponible (ne dépend pas d'une attribution figée),
+     * pour que le budget la prenne en compte automatiquement.
+     */
+    public function allocationFamiliale(Agent $agent): float
+    {
+        return $this->allocation->calculer((int) ($agent->nombre_enfants ?? 0));
+    }
 
     /** Logement = barème(catégorie, enseignant, au bureau/en classe). Toujours calculable. */
     public function logement(Agent $agent): float

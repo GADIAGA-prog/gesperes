@@ -48,6 +48,8 @@ class VentilationService
         $point = (float) config('grille.point_annuel', 2331);
         $carfo = (float) config('grille.carfo_taux', 0.08);
         $residence = (float) config('grille.residence_taux', 0.10);
+        $allocEnfant = (float) config('gesperes.allocation_familiale.montant_par_enfant', 0);
+        $allocMax    = (int) config('gesperes.allocation_familiale.nombre_max_enfants', 6);
 
         $appliquer = function ($q) use ($filtres) {
             // Filtre structure « cascade » : la structure choisie ET tout son sous-arbre.
@@ -57,7 +59,8 @@ class VentilationService
             return $q;
         };
 
-        // Solde (indice) + responsabilité (fonction) par action.
+        // Solde (indice) + responsabilité (fonction) + nb d'enfants plafonné (pour
+        // l'allocation familiale, calculée et non plus lue depuis les attributions) par action.
         $soldes = $appliquer(DB::table('agents as ag')
             ->join('structures as s', 's.id', '=', 'ag.structure_id')
             ->join('actions as ac', 'ac.id', '=', 's.action_id')
@@ -66,21 +69,8 @@ class VentilationService
             ->leftJoin('fonctions as f', 'f.id', '=', 'ag.fonction_id')
             ->whereNull('ag.deleted_at'))
             ->groupBy('ac.id', 'ac.code', 'ac.libelle', 'pr.code', 'pr.libelle')
-            ->selectRaw('ac.id aid, ac.code acode, ac.libelle alib, pr.code pcode, pr.libelle plib, SUM(i.valeur) sind, SUM(COALESCE(f.indemnite_responsabilite,0)) sresp')
+            ->selectRaw("ac.id aid, ac.code acode, ac.libelle alib, pr.code pcode, pr.libelle plib, SUM(i.valeur) sind, SUM(COALESCE(f.indemnite_responsabilite,0)) sresp, SUM(CASE WHEN COALESCE(ag.nombre_enfants,0) > {$allocMax} THEN {$allocMax} ELSE COALESCE(ag.nombre_enfants,0) END) snbenf")
             ->get();
-
-        // Allocation familiale (666, mensuelle) par action : non barème, valeur réelle.
-        $allocations = $appliquer(DB::table('agent_indemnites as ai')
-            ->join('agents as ag', 'ag.id', '=', 'ai.agent_id')
-            ->join('structures as s', 's.id', '=', 'ag.structure_id')
-            ->join('actions as ac', 'ac.id', '=', 's.action_id')
-            ->join('programmes as pr', 'pr.id', '=', 'ac.programme_id')
-            ->join('indemnites as im', 'im.id', '=', 'ai.indemnite_id')
-            ->where('im.code', 'ALLOC')
-            ->whereNull('ag.deleted_at'))
-            ->groupBy('ac.id')
-            ->selectRaw('ac.id aid, SUM(ai.montant) total')
-            ->get()->keyBy('aid');
 
         // Indemnités barème (663 : logement, technicité, astreinte, spécifique)
         // calculées PAR LES RÈGLES et agrégées par action (mensuel).
@@ -94,7 +84,8 @@ class VentilationService
             $primes663 = $soldeAnnuel * $residence
                 + (float) $r->sresp * 12
                 + (float) ($baremeParAction[$r->aid] ?? 0) * 12;
-            $p666 = (float) (optional($allocations->get($r->aid))->total ?? 0) * 12;
+            // 666 = allocation familiale calculée : nb d'enfants plafonné × barème, annualisé.
+            $p666 = (float) $r->snbenf * $allocEnfant * 12;
 
             $masse[$r->aid] = [
                 'programme_code'    => $r->pcode,
@@ -172,6 +163,8 @@ class VentilationService
         $point = (float) config('grille.point_annuel', 2331);
         $carfoPat = (float) config('grille.carfo_taux', 0.135);
         $residence = (float) config('grille.residence_taux', 0.10);
+        $allocEnfant = (float) config('gesperes.allocation_familiale.montant_par_enfant', 0);
+        $allocMax    = (int) config('gesperes.allocation_familiale.nombre_max_enfants', 6);
 
         $appliquer = function ($q) use ($filtres) {
             // Filtre structure « cascade » : la structure choisie ET tout son sous-arbre.
@@ -180,7 +173,8 @@ class VentilationService
                 ->when($filtres['action_id'] ?? null, fn ($q, $v) => $q->where('s.action_id', $v));
         };
 
-        // Solde (indice) + responsabilité (fonction) par programme × structure.
+        // Solde (indice) + responsabilité (fonction) + nb d'enfants plafonné (allocation
+        // familiale calculée) par programme × structure.
         $base = $appliquer(DB::table('agents as ag')
             ->join('structures as s', 's.id', '=', 'ag.structure_id')
             ->join('actions as ac', 'ac.id', '=', 's.action_id')
@@ -189,7 +183,7 @@ class VentilationService
             ->leftJoin('fonctions as f', 'f.id', '=', 'ag.fonction_id')
             ->whereNull('ag.deleted_at'))
             ->groupBy('pr.code', 'pr.libelle', 's.id', 's.libelle')
-            ->selectRaw('pr.code pcode, pr.libelle plib, s.id sid, s.libelle slib, SUM(i.valeur) sind, SUM(COALESCE(f.indemnite_responsabilite,0)) sresp, COUNT(*) n')
+            ->selectRaw("pr.code pcode, pr.libelle plib, s.id sid, s.libelle slib, SUM(i.valeur) sind, SUM(COALESCE(f.indemnite_responsabilite,0)) sresp, SUM(CASE WHEN COALESCE(ag.nombre_enfants,0) > {$allocMax} THEN {$allocMax} ELSE COALESCE(ag.nombre_enfants,0) END) snbenf, COUNT(*) n")
             ->get();
 
         // Indemnités (mensuelles) par programme × structure × code.
@@ -225,7 +219,7 @@ class VentilationService
                 'log'       => $m('LOG'),
                 'tech'      => $m('TECH'),
                 'autres'    => $m('SPEC'), // « Autres » = spécifique (cf. liehoun)
-                'af'        => $m('ALLOC'),
+                'af'        => (float) $r->snbenf * $allocEnfant * 12, // allocation familiale calculée
                 'carfo'     => $si * $carfoPat,
             ];
             $ligne['incidence'] = $ligne['si'] + $ligne['ir'] + $ligne['cm'] + $ligne['resp']
@@ -351,7 +345,8 @@ class VentilationService
             'log'       => $this->indemnites->logement($a),
             'tech'      => $this->indemnites->technicite($a),
             'autres'    => $this->indemnites->specifique($a) ?? $m('SPEC'),
-            'allo'      => $m('ALLOC'),
+            // Allocation familiale : attribuée si présente, sinon calcul auto (enfants).
+            'allo'      => $m('ALLOC') ?: $this->indemnites->allocationFamiliale($a),
             'carfo'     => round($solde * $carfo),
         ];
         $mensuel = $l['solde'] + $l['ir'] + $l['cm'] + $l['resp'] + $l['astr'] + $l['log'] + $l['tech'] + $l['autres'] + $l['allo'] + $l['carfo'];

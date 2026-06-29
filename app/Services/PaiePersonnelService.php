@@ -36,7 +36,9 @@ class PaiePersonnelService
         // dépendent de la zone — à défaut (décentralisé non rattaché), on retombe
         // sur le montant réel attribué à l'agent.
         $resp   = (float) ($agent->fonction?->indemnite_responsabilite ?? 0);
-        $alloc  = $m('ALLOC');
+        // Allocation familiale : montant attribué s'il existe, sinon calcul auto
+        // (nombre d'enfants) — comme la responsabilité, sans dépendre d'un « figer ».
+        $alloc  = $m('ALLOC') ?: $this->indemnites->allocationFamiliale($agent);
         $log    = $this->indemnites->logement($agent);
         $tech   = $this->indemnites->technicite($agent);
         $astr   = $this->indemnites->astreinte($agent) ?? $m('ASTR');

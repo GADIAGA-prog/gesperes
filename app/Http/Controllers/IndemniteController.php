@@ -102,16 +102,21 @@ class IndemniteController extends Controller
             ->with('success', 'Attribution retirée.');
     }
 
-    /** Calcule les indemnités barème et les fige comme attributions de l'agent. */
+    /**
+     * Calcule les indemnités automatiques et les fige comme attributions :
+     * responsabilité (RESP), allocation familiale (ALLOC) ET barèmes — toute
+     * indemnité dont le montant calculé est strictement positif.
+     */
     public function figer(Agent $agent): RedirectResponse
     {
         $this->authorize('indemnites.manage');
 
-        $agent->load(['emploi', 'categorie', 'echelle', 'localite.zone']);
+        // 'fonction' est requise pour la responsabilité, 'indice' pour les % (résidence).
+        $agent->load(['emploi', 'fonction', 'categorie', 'echelle', 'localite.zone', 'indice']);
         $n = 0;
 
         foreach ($this->service->pourAgent($agent) as $c) {
-            if ($c['indemnite']->mode !== ModeIndemnite::BAREME || $c['montant'] <= 0) {
+            if ($c['montant'] <= 0) {
                 continue;
             }
             $agent->indemnites()->updateOrCreate(
@@ -121,7 +126,7 @@ class IndemniteController extends Controller
             $n++;
         }
 
-        return back()->with('success', "{$n} indemnité(s) barème calculée(s) et figée(s).");
+        return back()->with('success', "{$n} indemnité(s) calculée(s) et figée(s) (responsabilité, allocation familiale et barèmes).");
     }
 
     /** Bulletin de rémunération (salaire indiciaire + indemnités) au format PDF. */
@@ -131,7 +136,8 @@ class IndemniteController extends Controller
 
         $agent->load(['emploi', 'fonction', 'categorie', 'echelle', 'classe', 'echelon', 'indice', 'localite.zone', 'structure']);
 
-        $indemnites = collect($this->service->pourAgent($agent))->filter(fn ($c) => $c['montant'] > 0)->values();
+        // Vue complète : barèmes + responsabilité + allocation + attributions manuelles.
+        $indemnites = collect($this->service->remuneration($agent))->filter(fn ($c) => $c['montant'] > 0)->values();
         $salaire = (float) ($agent->indice?->salaire_indiciaire ?? 0);
         $totalIndem = (float) $indemnites->sum('montant');
 

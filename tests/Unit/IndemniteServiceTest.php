@@ -92,6 +92,39 @@ class IndemniteServiceTest extends TestCase
     }
 
     #[Test]
+    public function remuneration_combine_responsabilite_allocation_et_attributions_manuelles(): void
+    {
+        config([
+            'gesperes.allocation_familiale.montant_par_enfant' => 2000,
+            'gesperes.allocation_familiale.nombre_max_enfants'  => 6,
+        ]);
+
+        $fonction = \App\Models\Fonction::create([
+            'code' => 'PROV', 'libelle' => 'Proviseur', 'indemnite_responsabilite' => 12000, 'actif' => true,
+        ]);
+
+        $agent = Agent::create([
+            'matricule' => 'REM001', 'nom' => 'SANOU', 'prenoms' => 'Issa', 'sexe' => 'M',
+            'fonction_id' => $fonction->id, 'nombre_enfants' => 3,
+        ]);
+
+        $resp  = Indemnite::create(['code' => 'RESP', 'libelle' => 'Responsabilité', 'mode' => 'montant_fixe', 'valeur' => 0, 'actif' => true]);
+        $alloc = Indemnite::create(['code' => 'ALLOC', 'libelle' => 'Allocation familiale', 'mode' => 'montant_fixe', 'valeur' => 0, 'actif' => true]);
+        $autres = Indemnite::create(['code' => 'AUTRES', 'libelle' => 'Autres', 'mode' => 'montant_fixe', 'valeur' => 0, 'actif' => true]);
+
+        // Indemnité saisie manuellement (montant libre) — ignorée par l'ancien bulletin.
+        $agent->indemnites()->create(['indemnite_id' => $autres->id, 'montant' => 5000, 'actif' => true]);
+
+        $lignes = collect(app(IndemniteService::class)->remuneration($agent))->keyBy(fn ($l) => $l['indemnite']->code);
+
+        $this->assertSame(12000.0, $lignes['RESP']['montant']);   // responsabilité = fonction
+        $this->assertSame('calcul', $lignes['RESP']['source']);
+        $this->assertSame(6000.0, $lignes['ALLOC']['montant']);   // 3 enfants × 2000
+        $this->assertSame(5000.0, $lignes['AUTRES']['montant']);  // attribution manuelle prise en compte
+        $this->assertSame('attribution', $lignes['AUTRES']['source']);
+    }
+
+    #[Test]
     public function la_zone_est_heritee_de_la_structure_par_cascade(): void
     {
         $semi = Zone::create(['code' => 'semi_urbaine', 'libelle' => 'Semi-urbaine', 'actif' => true]);
