@@ -53,7 +53,7 @@
                     <td>{{ $l['references'] }}</td>
                 </tr>
             @empty
-                <tr><td colspan="9" class="c">Aucune absence relevée sur la période.</td></tr>
+                <tr><td colspan="9" class="c">Aucun agent rattaché à cette structure.</td></tr>
             @endforelse
         </tbody>
     </table>

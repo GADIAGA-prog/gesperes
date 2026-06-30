@@ -83,24 +83,54 @@ class FichePresenceController extends Controller
     {
         $this->authorize('presence.reports');
         $data = $request->validate([
-            'trimestre' => ['required', 'integer', 'between:1,4'],
-            'annee'     => ['required', 'integer', 'between:2000,2100'],
-            'format'    => ['nullable', 'in:pdf,xlsx'],
+            'mois'   => ['required', 'integer', 'between:1,12'],
+            'annee'  => ['required', 'integer', 'between:2000,2100'],
+            'format' => ['nullable', 'in:pdf,xlsx'],
         ]);
 
-        $fiche = $this->service->ficheC((int) $data['trimestre'], (int) $data['annee']);
-        $nom = "fiche_C_{$data['annee']}_T{$data['trimestre']}";
+        $fiche = $this->service->ficheC((int) $data['mois'], (int) $data['annee']);
+        $nom = "fiche_C_{$data['annee']}_{$data['mois']}";
 
         if (($data['format'] ?? 'pdf') === 'xlsx') {
-            $entetes = ['N°', 'Nom et Prénoms', 'Matricule', 'Emploi', 'Fonction', 'Structure', 'Absence (Heure)', 'Absence (Jour)', 'Mesures prises', 'Référence pièces justificatives'];
-            $lignes = array_map(fn ($l) => [
-                $l['n'], $l['nom'], $l['matricule'], $l['emploi'], $l['fonction'], $l['structure'],
-                $l['total_heures'], $l['total_jours'], $l['mesures'], $l['references'],
-            ], $fiche['lignes']);
-
-            return Excel::download(new FicheExcelExport('Fiche C', $entetes, $lignes), "{$nom}.xlsx");
+            return Excel::download(new FicheExcelExport('Fiche C', $this->entetesRecap(), $this->lignesRecap($fiche['lignes'])), "{$nom}.xlsx");
         }
 
         return Pdf::loadView('fiches.pdf.fiche-c', $fiche)->setPaper('a4', 'landscape')->download("{$nom}.pdf");
+    }
+
+    public function ficheD(Request $request): Response
+    {
+        $this->authorize('presence.reports');
+        $data = $request->validate([
+            'structure_id' => ['nullable', 'exists:structures,id'],
+            'trimestre'    => ['required', 'integer', 'between:1,4'],
+            'annee'        => ['required', 'integer', 'between:2000,2100'],
+            'format'       => ['nullable', 'in:pdf,xlsx'],
+        ]);
+
+        $structureId = ! empty($data['structure_id']) ? (int) $data['structure_id'] : null;
+        $fiche = $this->service->ficheD($structureId, (int) $data['trimestre'], (int) $data['annee']);
+        $nom = "fiche_D_{$data['annee']}_T{$data['trimestre']}";
+
+        if (($data['format'] ?? 'pdf') === 'xlsx') {
+            return Excel::download(new FicheExcelExport('Fiche D', $this->entetesRecap(), $this->lignesRecap($fiche['lignes'])), "{$nom}.xlsx");
+        }
+
+        return Pdf::loadView('fiches.pdf.fiche-d', $fiche)->setPaper('a4', 'landscape')->download("{$nom}.pdf");
+    }
+
+    /** Entêtes Excel des récapitulatifs (fiches C et D). */
+    private function entetesRecap(): array
+    {
+        return ['N°', 'Nom et Prénoms', 'Matricule', 'Emploi', 'Fonction', 'Structure', 'Absence (Heure)', 'Absence (Jour)', 'Mesures prises', 'Référence pièces justificatives'];
+    }
+
+    /** Lignes Excel des récapitulatifs (fiches C et D). */
+    private function lignesRecap(array $lignes): array
+    {
+        return array_map(fn ($l) => [
+            $l['n'], $l['nom'], $l['matricule'], $l['emploi'], $l['fonction'], $l['structure'],
+            $l['total_heures'], $l['total_jours'], $l['mesures'], $l['references'],
+        ], $lignes);
     }
 }

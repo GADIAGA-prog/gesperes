@@ -194,6 +194,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/a',      [FichePresenceController::class, 'ficheA'])->name('a');
         Route::get('/b',      [FichePresenceController::class, 'ficheB'])->name('b');
         Route::get('/c',      [FichePresenceController::class, 'ficheC'])->name('c');
+        Route::get('/d',      [FichePresenceController::class, 'ficheD'])->name('d');
     });
 
     /* Congés & autorisations d'absence */

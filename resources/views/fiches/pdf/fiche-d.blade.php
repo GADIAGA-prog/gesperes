@@ -17,12 +17,13 @@
 <body>
     @include('fiches.pdf._entete', ['avecDrh' => true])
 
-    <h1>FICHE C : SITUATION MENSUELLE DE PRÉSENCE DES AGENTS DU MINISTÈRE</h1>
+    <h1>FICHE D : SITUATION TRIMESTRIELLE DE PRÉSENCE DES AGENTS</h1>
 
     <div class="meta">
-        <strong>Périmètre :</strong> Ensemble du ministère &nbsp;&nbsp;|&nbsp;&nbsp;
-        <strong>Mois :</strong> {{ $periode[0]->translatedFormat('F') }} &nbsp;&nbsp;|&nbsp;&nbsp;
-        <strong>Année :</strong> {{ $annee }}
+        <strong>Périmètre :</strong> {{ $structure?->libelle ?? 'Ensemble du ministère' }} &nbsp;&nbsp;|&nbsp;&nbsp;
+        <strong>{{ $trimestre }}<sup>e</sup> trimestre</strong> &nbsp;&nbsp;|&nbsp;&nbsp;
+        <strong>Année :</strong> {{ $annee }} &nbsp;&nbsp;|&nbsp;&nbsp;
+        <strong>Période :</strong> {{ $periode[0]->translatedFormat('F') }} – {{ $periode[1]->translatedFormat('F Y') }}
     </div>
 
     <table class="grille">
@@ -62,7 +63,11 @@
 
     <div class="sign">
         Fait à ……………………… , le ……………………<br><br>
-        La Directrice des Ressources Humaines
+        @if ($structure)
+            Signature et cachet du responsable de structure
+        @else
+            La Directrice des Ressources Humaines
+        @endif
     </div>
 </body>
 </html>
